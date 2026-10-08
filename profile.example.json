@@ -1,0 +1,73 @@
+{
+  "_note": "Copy to profile.json (gitignored) and fill in. Use null for anything you don't want auto-filled.",
+  "personal": {
+    "first_name": "",
+    "last_name": "",
+    "preferred_name": "",
+    "email": "",
+    "phone": "",
+    "phone_country_code": "+91",
+    "date_of_birth": null,
+    "gender": null,
+    "pronouns": null
+  },
+  "location": {
+    "current_city": "",
+    "current_state": "",
+    "country": "",
+    "postal_code": "",
+    "address_line1": null,
+    "willing_to_relocate": null,
+    "preferred_locations": []
+  },
+  "links": {
+    "linkedin": "",
+    "github": "",
+    "portfolio": "",
+    "other": []
+  },
+  "work_authorization": {
+    "authorized_countries": [],
+    "requires_sponsorship": null,
+    "notes": ""
+  },
+  "employment": {
+    "current_company": "",
+    "current_title": "",
+    "total_experience_years": null,
+    "notice_period": "",
+    "current_ctc": null,
+    "expected_ctc": null,
+    "ctc_currency": "INR",
+    "earliest_start_date": null
+  },
+  "education": [
+    {
+      "institution": "",
+      "degree": "",
+      "field": "",
+      "start_year": null,
+      "end_year": null,
+      "grade": null
+    }
+  ],
+  "work_history": [
+    {
+      "company": "",
+      "title": "",
+      "start": "YYYY-MM",
+      "end": "YYYY-MM or present",
+      "location": "",
+      "summary": ""
+    }
+  ],
+  "skills": [],
+  "resumes": {
+    "default": "resumes/resume.pdf",
+    "variants": { "example-role": "resumes/resume-example-role.pdf" }
+  },
+  "eeo_and_sensitive": {
+    "_note": "Race, disability, veteran status etc. Default is to ask the user every time.",
+    "auto_fill": false
+  }
+}

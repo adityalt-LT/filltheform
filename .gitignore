@@ -1,0 +1,7 @@
+# Personal data - never commit
+profile.json
+qa-bank.md
+questions-log.md
+resumes/*
+!resumes/.gitkeep
+.env
