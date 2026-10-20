@@ -32,3 +32,20 @@ export async function download(path, fallbackName) {
   document.body.append(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 4000);
 }
+
+// POST that answers with server-sent events. Calls onEvent for each {type, ...} message.
+export async function streamPost(path, body, onEvent, signal) {
+  const res = await fetch(path, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}), signal });
+  if (!res.ok) { const d = await res.json().catch(() => ({})); const e = new Error(d.error || `Request failed (${res.status})`); e.status = res.status; throw e; }
+  const reader = res.body.getReader(); const dec = new TextDecoder(); let buf = '';
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buf += dec.decode(value, { stream: true });
+    let i;
+    while ((i = buf.indexOf('\n\n')) >= 0) {
+      const chunk = buf.slice(0, i); buf = buf.slice(i + 2);
+      if (chunk.startsWith('data: ')) { try { onEvent(JSON.parse(chunk.slice(6))); } catch { /* ignore a malformed event */ } }
+    }
+  }
+}

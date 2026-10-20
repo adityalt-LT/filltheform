@@ -44,21 +44,33 @@ const ctx = await chromium.launchPersistentContext(join(tmp, 'profile'), {
 const pageErrors = [];
 const watch = (p) => p.on('pageerror', (e) => pageErrors.push(e.message));
 let failed = false;
+const SHOTS = process.env.E2E_SHOTS; // optional: directory to save screenshots for design review
+const assertClean = async (page, where) => { const t = await page.locator('main').innerText(); assert.doesNotMatch(t, /undefined|NaN|\[object|(^|\s)false(\s|$)|(^|\s)null(\s|$)/, `stray value rendered on ${where}`); };
+const shot = async (page, name, full = false) => { if (SHOTS) await page.screenshot({ path: join(SHOTS, `${name}.png`), fullPage: full }); };
 const step = async (name, fn) => { try { await fn(); console.log('✔', name); } catch (e) { failed = true; console.log('✖', name, '\n   ', e.message.split('\n')[0]); } };
 
 try {
   const dash = await ctx.newPage(); watch(dash);
-  await step('sign up and upload resume; confirm step shows the rebuilt resume', async () => {
+  await step('onboarding asks only for the resume and builds the profile from it', async () => {
     await dash.goto(DASH);
+    await shot(dash, '01-auth');
     await dash.fill('input[type=email]', 'e2e@example.com'); await dash.fill('input[type=password]', 'correct horse');
     await dash.click('button[type=submit]');
     await dash.waitForSelector('.drop');
+    await shot(dash, '02-welcome');
+    assert.equal(await dash.locator('input[type=text], input[type=number]').count(), 0, 'no form fields on the welcome step');
     await dash.setInputFiles('input[type=file]', join(root, 'fixtures', 'sample-resume.txt'));
-    await dash.waitForSelector('.compare iframe');
-    const html = await dash.frameLocator('.compare iframe').locator('h2').allInnerTexts();
-    assert.deepEqual(html, ['SUMMARY', 'EXPERIENCE', 'PROJECTS', 'EDUCATION', 'SKILLS', 'CERTIFICATIONS']);
-    await dash.click('text=Looks right, continue');
+    await dash.waitForSelector('.profile-card');
+    const card = await dash.locator('.profile-card').innerText();
+    for (const want of ['RAHUL SHARMA', 'Software Engineer', 'Bengaluru', 'rahul.sharma@example.com', '+91 98765 43210', 'Python', 'Django']) assert.ok(card.includes(want), `profile shows ${want}`);
+    await dash.click('summary:has-text("Check how we rebuilt")');
+    await dash.waitForTimeout(700);
+    const headings = await dash.frameLocator('.compare iframe').locator('h2').allInnerTexts();
+    assert.deepEqual(headings, ['SUMMARY', 'EXPERIENCE', 'PROJECTS', 'EDUCATION', 'SKILLS', 'CERTIFICATIONS']);
+    await shot(dash, '03-profile-review', true);
+    await dash.click('text=Looks good, continue');
     await dash.waitForSelector('.empty');
+    await shot(dash, '04-empty');
   });
 
   const ext = await ctx.newPage();
@@ -101,6 +113,14 @@ try {
     await jobTab.close(); await pop.close();
   });
 
+  await step('single-page site with stale structured data: captures the job on screen, not the previous one (Nike, not Acme)', async () => {
+    const { pop, jobTab } = await capture('spa.html');
+    const text = await pop.locator('.wrap').innerText();
+    assert.match(text, /Product Management Intern/); assert.match(text, /Nike/);
+    assert.doesNotMatch(text, /Senior Backend Engineer/); assert.doesNotMatch(text, /Acme/);
+    await jobTab.close(); await pop.close();
+  });
+
   await step('job page: Kubernetes is the only must-have gap; confirming it updates the score', async () => {
     await dash.goto(`${DASH}/#/tracking`); await dash.waitForSelector('.board');
     await dash.click('.jcard:has-text("Senior Backend")'); await dash.waitForSelector('.ring');
@@ -110,6 +130,8 @@ try {
     const covered = await dash.locator('.chip.good').allInnerTexts();
     for (const need of ['Docker', 'PostgreSQL', 'CI/CD', 'Redis', 'AWS']) assert.ok(covered.includes(need), `${need} should be a detected, covered requirement; covered was ${covered}`);
     assert.ok(gaps.includes('Terraform') && gaps.includes('Kafka'), `nice-to-haves after "Good to have" should be detected; gaps were ${gaps}`);
+    await shot(dash, '09-job-overview', true);
+    await assertClean(dash, 'job overview');
     const before = Number(await dash.locator('.ring > div').innerText());
     await dash.click('.gap:has(.chip:text-is("Kubernetes")) >> text=I have this'); await dash.waitForTimeout(500);
     assert.ok(Number(await dash.locator('.ring > div').innerText()) > before);
@@ -118,6 +140,7 @@ try {
   await step('re-tailor, edit: remove bullet updates preview, undo restores, PDF downloads', async () => {
     await dash.click('text=Re-tailor'); await dash.waitForTimeout(800);
     await dash.click('text=Edit & preview'); await dash.waitForSelector('.editor iframe'); await dash.waitForTimeout(900);
+    await shot(dash, '10-editor', true);
     const frame = dash.frameLocator('.editor iframe');
     const skills = await frame.locator('p.skills').allInnerTexts();
     assert.ok(skills.join(' ').includes('Kubernetes'), 'confirmed skill is on the tailored resume');
@@ -130,11 +153,38 @@ try {
     assert.match(d.suggestedFilename(), /\.pdf$/);
   });
 
-  await step('screening prep and skill gaps render', async () => {
-    await dash.goBack().catch(() => {}); await dash.goto(`${DASH}/#/tracking`); await dash.waitForSelector('.board');
-    await dash.click('.jcard:has-text("Product Analyst")'); await dash.waitForSelector('.ring');
-    await dash.click('text=Screening prep'); await dash.waitForSelector('.qa');
-    assert.ok(await dash.locator('.qa .q', { hasText: 'notice period' }).count());
+  await step('the three captures are three separate jobs on the board', async () => {
+    await dash.goto(`${DASH}/#/tracking`); await dash.waitForSelector('.board');
+    const titles = await dash.locator('.jcard .t').allInnerTexts();
+    for (const t of ['Senior Backend Engineer', 'Product Analyst', 'Product Management Intern']) assert.ok(titles.includes(t), `${t} in ${titles}`);
+    await shot(dash, '05-board');
+    await assertClean(dash, 'tracking');
+  });
+
+  await step('interview prep: every question has a drafted answer, nothing asks the user for input', async () => {
+    await dash.click('.jcard:has-text("Product Management Intern")'); await dash.waitForSelector('.ring');
+    await dash.click('.tabs >> text=Interview prep');
+    await dash.waitForSelector('.oneliner', { timeout: 30000 });
+    await shot(dash, '06-prep', true);
+    await assertClean(dash, 'interview prep');
+    const qs = await dash.locator('details.q').count();
+    assert.ok(qs >= 8, `expected 8+ questions, got ${qs}`);
+    const page = await dash.locator('main').innerText();
+    assert.doesNotMatch(page, /needs your input/i);
+    assert.match(page, /Turn on AI/);
+    await dash.click('details.q >> nth=1 >> summary'); await dash.waitForTimeout(200);
+    assert.ok((await dash.locator('details.q[open] .ans').first().innerText()).length > 30);
+  });
+
+  await step('Ask AI explains how to turn on AI when there is no key; Settings shows setup steps', async () => {
+    await dash.click('.tabs >> text=Ask AI');
+    await dash.waitForSelector('text=Ask AI needs an API key');
+    await shot(dash, '07-chat-off');
+    await dash.goto(`${DASH}/#/settings`); await dash.waitForSelector('text=ANTHROPIC_API_KEY');
+    await shot(dash, '08-settings', true);
+  });
+
+  await step('skill gaps render', async () => {
     await dash.goto(`${DASH}/#/gaps`); await dash.waitForSelector('.gap');
   });
 

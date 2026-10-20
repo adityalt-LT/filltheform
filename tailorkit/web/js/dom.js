@@ -28,8 +28,12 @@ export function toast(msg, isErr = false) {
   setTimeout(() => t.remove(), isErr ? 6000 : 3200);
 }
 
-export const spinner = (text) => h('div', { class: 'muted', style: 'padding:24px;text-align:center' }, h('span', { class: 'spin' }), ' ', text || 'Loading…');
+export const spinner = (text) => h('div', { class: 'muted', style: 'padding:32px;text-align:center;display:flex;gap:10px;justify-content:center;align-items:center' }, h('span', { class: 'spin' }), text || 'Loading…');
 
 export function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
 
 export const fmtDate = (s) => { if (!s) return ''; const d = new Date(s.includes('T') ? s : s.replace(' ', 'T') + 'Z'); return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' }); };
+
+export async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); toast('Copied'); } catch { toast('Could not copy. Select the text and copy it.', true); }
+}

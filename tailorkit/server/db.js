@@ -37,6 +37,12 @@ export function openDb(path = 'data/tailorkit.db') {
       data TEXT NOT NULL, changes TEXT NOT NULL DEFAULT '[]', suggestions TEXT NOT NULL DEFAULT '[]',
       created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
+    CREATE TABLE IF NOT EXISTS company_research (
+      company_key TEXT PRIMARY KEY, data TEXT NOT NULL, mode TEXT NOT NULL DEFAULT 'basic', created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE TABLE IF NOT EXISTS job_prep (
+      job_id INTEGER PRIMARY KEY REFERENCES jobs(id) ON DELETE CASCADE, data TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
     CREATE INDEX IF NOT EXISTS resumes_user ON resumes(user_id, created_at);
     -- One row per job per month: re-tailoring the same job is free, deleting a job does not refund the quota.
     CREATE TABLE IF NOT EXISTS usage (
@@ -44,5 +50,10 @@ export function openDb(path = 'data/tailorkit.db') {
       PRIMARY KEY (user_id, month, job_key)
     );
   `);
+  // Added after the first release: a stable identity for "the same job" (see capture).
+  if (!db.prepare('PRAGMA table_info(jobs)').all().some((c) => c.name === 'job_key')) {
+    db.exec("ALTER TABLE jobs ADD COLUMN job_key TEXT NOT NULL DEFAULT ''");
+  }
+  db.exec('CREATE INDEX IF NOT EXISTS jobs_key ON jobs(user_id, job_key)');
   return db;
 }

@@ -2,7 +2,7 @@
 
 A Chrome extension plus a dashboard (same login) that helps a candidate apply with a resume that fits each job, without changing the resume's own structure.
 
-**Flow:** upload resume once → open a job page or LinkedIn hiring post → click the extension → see a match score and what's missing → download a tailored PDF → track the application → prepare for the screening call.
+**Flow:** upload your resume once (that's the only onboarding step; the profile is read from it) → open a job page or LinkedIn hiring post → click the extension → see a match score and what's missing → download a tailored PDF → track the application → get an AI interview brief with company research → chat with an assistant that knows the job.
 
 It never submits an application. The candidate reviews and applies themselves.
 
@@ -11,10 +11,11 @@ It never submits an application. The candidate reviews and applies themselves.
 ```bash
 cd tailorkit
 npm install
-cp .env.example .env        # optional; see "Modes"
+cp .env.example .env        # optional; add ANTHROPIC_API_KEY to turn on AI (see "Modes")
 npm start                   # http://localhost:3000
-npm test                    # 28 unit/API tests
-npm run e2e                 # real Chromium + the real extension (7 steps)
+npm test                    # unit + API tests (AI paths use a fake client)
+npm run e2e                 # real Chromium + the real extension
+npm run e2e:ai              # AI-mode screens (research, prep, streaming chat) with a fake client
 ```
 
 Node 22.13+ is required (uses the built-in `node:sqlite`). PDFs are made with a local Chrome/Chromium; it is auto-detected, or set `CHROMIUM_PATH`.
@@ -38,13 +39,19 @@ The manifest only trusts `http://localhost:3000`. For another server, enter its 
 | **PDF** | Single-column, real text, standard fonts, no positioned elements, so the text layer reads in order for ATS parsers (tested by re-parsing our own PDF). |
 | **Editor** | Edit text, remove/reorder bullets, entries and sections, undo, live preview, accept/reject AI rewordings. |
 | **Tracking** | Board: Saved → Applied → Screening call → Interview → Offer → Rejected. Drag cards, or use the Stage menu. |
-| **Screening prep** | Likely questions with answers drafted only from the candidate's own profile; unknown facts (notice period, CTC…) are flagged "Needs your input", never guessed. |
+| **Interview prep** | Per job: a one-line brief, what they want, where you're strong, honest framing for gaps, company research, 8–14 likely questions each with a **drafted answer built from your resume**, questions to ask back, and notice/CTC strategy. Nothing asks the candidate to fill anything in. Cached per job; marked stale when your resume changes. |
+| **Company research** | AI mode: Claude searches the public web (review themes, reported interview process and questions, news, pay) and returns a summary **with the sources it retrieved** and a coverage indicator (good / partial / not found). Basic mode: a Wikipedia snapshot. Cached per company for a week. |
+| **Ask AI** | Streaming chat grounded in the job description, your resume and the research. AI mode only. |
 | **Skill gaps** | What's missing most often across all saved jobs. |
 | **Free tier** | `FREE_MONTHLY_LIMIT` (default 10) jobs tailored per month. Re-tailoring the same job is free; deleting a job doesn't refund quota. |
 
 ## Modes
-- **Basic mode (default, no key):** rule-based job reading, matching and tailoring.
-- **AI mode (`ANTHROPIC_API_KEY`):** better job extraction (title, company, requirements) and rewording suggestions. Suggestions are never applied silently, may not change any number, and page text is fenced as data so instructions inside a job page are ignored.
+- **Basic mode (default, no key):** rule-based job reading, matching, tailoring and prep; Wikipedia company snapshot.
+- **AI mode (`ANTHROPIC_API_KEY` in `.env`):** adds company research with web search, personalised prep, better job extraction, rewording suggestions and Ask AI. Default model is `claude-opus-5-5`; set `TAILORKIT_MODEL` (e.g. `claude-sonnet-5-5` or `claude-haiku-5-5`) to trade quality for cost. Requests use the server-side refusal fallback and retry without it if an account rejects it.
+- Safety: page text, reviews and resumes are fenced as data in every prompt; rewrites may not change numbers; sources shown are the pages actually retrieved or cited, never model-claimed.
+
+### About Glassdoor and other review sites
+There is **no scraping** of Glassdoor, AmbitionBox, LinkedIn or Naukri (their terms forbid it, they block bots, and it would put users' accounts at risk). Review and interview insight comes from public web search through the model, with links to what it found. Coverage varies by company: when review sites can't be read, the brief says so ("Not found") instead of guessing. A possible next step is a "save this page as company research" button in the extension, so a candidate can add a review page they are already looking at.
 
 ## Layout
 ```
@@ -59,7 +66,8 @@ fixtures/ sample resume and job description
 - **Layout fidelity:** the candidate's layout is *rebuilt* from the detected structure for both PDF and DOCX uploads (same sections, order, headings, bullet glyph). It is not a pixel copy, and editing the original DOCX in place is not built yet. Fonts and column layouts are not preserved. The confirm step exists so candidates see this up front.
 - **Resume parsing is heuristic.** Unusual layouts (multi-column, tables, scanned images) can be misread; the editor is the safety net. Scanned PDFs are rejected with a message.
 - **Site selectors are untested against live LinkedIn/Naukri.** They are best-effort and will change; the selection fallback and JSON-LD path are the dependable ones. Tested here against local fixture pages only.
-- **AI mode has not been run** in development (no API key was available); it is covered only by the fallbacks and the number-preservation guard.
+- **AI mode has not been run against the real API** (no key was available while building). Request shapes, the web-search pause/resume loop, fallbacks, caching, streaming and every screen are tested with a fake client; real model output quality, latency and cost are unmeasured.
+- **AI cost:** company research uses web search and is the most expensive call (cached a week per company). Measure per-user cost before fixing a price, and consider a cheaper `TAILORKIT_MODEL`.
 - **No billing, email verification or password reset yet.** `plan` exists on users; `free` is enforced.
 - **Auth** is bearer tokens in `localStorage` (30-day sessions) with scrypt password hashes and an in-memory rate limit, which is fine for one process, not for a scaled deployment.
 - **Not legal advice:** resumes are sensitive personal data. Before launch, add a privacy policy, DPDP Act consent, deletion/export (both are implemented in Settings), and consider encrypting resume data at rest.

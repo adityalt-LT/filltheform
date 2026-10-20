@@ -32,7 +32,7 @@ export function extractBasic(text, hints = {}) {
   const yrs = parseYears(body);
   return {
     title: hints.title || guessTitle(lines, body),
-    company: hints.company || guessCompany(body),
+    company: hints.company || guessCompany(body, lines),
     location: hints.location || '',
     mustHave: [...must],
     niceToHave: [...nice],
@@ -79,9 +79,19 @@ function guessTitle(lines, body) {
   return lines.find((l) => l.length > 3 && l.length < 90) || '';
 }
 
-function guessCompany(body) {
+const NOT_COMPANY = /\b(requirements?|responsibilit|qualifications?|about|apply|location|remote|hybrid|full[- ]time|part[- ]time|posted|salary|experience|skills?|benefits?|description|overview|summary|job|jobs|hiring)\b/i;
+
+// "at Acme Corp" in running text, else a short capitalised line right next to the title ("Nike" under "Product Manager").
+function guessCompany(body, lines = []) {
   const m = body.match(/\bat[ \t]+((?:[A-Z][\w&.\-]*)(?:[ \t]+(?:[A-Z][\w&.\-]*|&)){0,3})/);
-  return m ? m[1].trim().replace(/[.,]$/, '') : '';
+  if (m) return m[1].trim().replace(/[.,]$/, '');
+  const t = lines.findIndex((l) => l.length <= 90 && ROLE_WORD.test(l));
+  for (const i of [t + 1, t - 1]) {
+    if (t < 0 || i < 0 || i >= lines.length) continue;
+    const name = lines[i].split(/\s+[·•|\-–—]\s+|,\s+/)[0].trim();
+    if (name && name.length <= 40 && /^[A-Z0-9]/.test(name) && name.split(/\s+/).length <= 4 && !/\d{3,}/.test(name) && !ROLE_WORD.test(name) && !NOT_COMPANY.test(name) && !/[.!?:]$/.test(name)) return name;
+  }
+  return '';
 }
 
 export async function extractJob(text, hints = {}) {

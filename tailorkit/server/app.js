@@ -10,13 +10,47 @@ import { extractJob } from './lib/jd.js';
 import { scoreMatch, estimateYears } from './lib/match.js';
 import { tailorResume, suggestRewrites } from './lib/tailor.js';
 import { renderHtml, renderPdf } from './lib/render.js';
-import { buildScreening } from './lib/screening.js';
-import { aiEnabled } from './lib/ai.js';
+import { aiEnabled, aiLastError, aiModel, streamChat } from './lib/ai.js';
+import { deriveProfile } from './lib/derive.js';
+import { getCompanyResearch } from './lib/research.js';
+import { buildPrep, chatSystem } from './lib/prep.js';
+import { createHash } from 'node:crypto';
 
 const WEB_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'web');
 export const STATUSES = ['saved', 'applied', 'screening', 'interview', 'offer', 'rejected'];
 const j = (v, d) => { try { return JSON.parse(v); } catch { return d; } };
 const month = () => new Date().toISOString().slice(0, 7);
+
+// ---- job identity: the same posting captured twice is one job; a different posting is never merged into it.
+const TRACKING = /^(utm_|trk|trackingid|refid|ref$|referrer|fbclid|gclid|li_fat_id|lipi|ebp|midtoken|midsig|recommendedflavor|originalsubdomain)/i;
+export function canonicalUrl(raw) {
+  try {
+    const u = new URL(raw);
+    u.hash = '';
+    for (const k of [...u.searchParams.keys()]) if (TRACKING.test(k)) u.searchParams.delete(k);
+    u.searchParams.sort();
+    return `${u.protocol}//${u.host.toLowerCase()}${u.pathname.replace(/\/+$/, '')}${u.search}`;
+  } catch { return String(raw || '').trim(); }
+}
+const words = (t) => new Set(String(t).toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').split(/\s+/).filter((w) => w.length > 3).slice(0, 400));
+export function similarText(a, b) {
+  const x = words(String(a).slice(0, 2500)); const y = words(String(b).slice(0, 2500));
+  if (!x.size || !y.size) return 0;
+  let inter = 0; for (const w of x) if (y.has(w)) inter++;
+  return inter / (x.size + y.size - inter);
+}
+const norm = (t) => String(t || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+export function sameJob(existing, reqs, text) {
+  if (existing.title && reqs.title && norm(existing.title) === norm(reqs.title)) return true;
+  return similarText(existing.jd_text, text) >= 0.6;
+}
+const shortHash = (t) => createHash('sha1').update(String(t)).digest('hex').slice(0, 8);
+
+function sseStart(res) {
+  res.set({ 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache, no-transform', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
+  res.flushHeaders?.();
+  return (obj) => { if (!res.writableEnded) res.write(`data: ${JSON.stringify(obj)}\n\n`); };
+}
 
 export function createApp({ dbPath = process.env.DB_PATH || 'data/tailorkit.db', freeLimit = Number(process.env.FREE_MONTHLY_LIMIT || 10) } = {}) {
   const db = openDb(dbPath);
@@ -115,7 +149,7 @@ export function createApp({ dbPath = process.env.DB_PATH || 'data/tailorkit.db',
 
   app.get('/api/me', auth, (req, res) => {
     const p = getProfile(req.user.id);
-    res.json({ user: { email: req.user.email, plan: req.user.plan }, quota: quota(req.user), hasResume: !!p, aiEnabled: aiEnabled() });
+    res.json({ user: { email: req.user.email, plan: req.user.plan }, quota: quota(req.user), hasResume: !!p, aiEnabled: aiEnabled(), aiModel: aiEnabled() ? aiModel() : null, aiError: aiLastError() });
   });
 
   // ---------- profile
@@ -130,13 +164,13 @@ export function createApp({ dbPath = process.env.DB_PATH || 'data/tailorkit.db',
     db.prepare(`INSERT INTO profiles (user_id, resume, original_text, source_format, facts, confirmed_skills) VALUES (?,?,?,?,?,?)
       ON CONFLICT(user_id) DO UPDATE SET resume = excluded.resume, original_text = excluded.original_text, source_format = excluded.source_format, updated_at = datetime('now')`)
       .run(req.user.id, JSON.stringify(resume), extracted.text.slice(0, 60000), extracted.format, JSON.stringify(prev?.facts || {}), JSON.stringify(prev?.confirmedSkills || []));
-    res.status(201).json({ resume, warnings: parseWarnings(resume), format: extracted.format, originalText: extracted.text.slice(0, 20000) });
+    res.status(201).json({ resume, derived: deriveProfile(resume), warnings: parseWarnings(resume), format: extracted.format, originalText: extracted.text.slice(0, 20000) });
   });
 
   app.get('/api/profile', auth, (req, res) => {
     const p = getProfile(req.user.id);
     if (!p) return res.json({ profile: null });
-    res.json({ profile: { ...p, warnings: parseWarnings(p.resume), yearsEstimate: estimateYears(p.resume) } });
+    res.json({ profile: { ...p, derived: deriveProfile(p.resume), warnings: parseWarnings(p.resume), yearsEstimate: estimateYears(p.resume) } });
   });
 
   app.put('/api/profile', auth, (req, res) => {
@@ -169,15 +203,27 @@ export function createApp({ dbPath = process.env.DB_PATH || 'data/tailorkit.db',
 
     const reqs = await extractJob(text, hints);
     const match = rescore(profile, reqs);
-    const existing = url ? db.prepare('SELECT * FROM jobs WHERE user_id = ? AND url = ?').get(req.user.id, url) : null;
+    const externalId = String(req.body?.externalId || '').slice(0, 80);
+    let host = ''; try { host = new URL(url).host.toLowerCase(); } catch { /* not a URL */ }
+    const baseKey = externalId ? `${host}:${externalId}` : canonicalUrl(url);
+    let jobKey = baseKey;
+    let existing = null;
+    if (baseKey) {
+      // Candidates: the plain key, keys disambiguated with "#hash" (several postings on one address), and pre-upgrade rows.
+      const prefix = `${baseKey}#`;
+      const rows = db.prepare("SELECT * FROM jobs WHERE user_id = ? AND (job_key = ? OR substr(job_key, 1, ?) = ? OR (job_key = '' AND url = ?)) ORDER BY id DESC").all(req.user.id, baseKey, prefix.length, prefix, url);
+      existing = rows.find((row) => sameJob(row, reqs, text)) || null;
+      // Same address but a different posting (single-page sites, stale pages): keep it as its own job.
+      if (!existing && rows.length) jobKey = `${prefix}${shortHash(text)}`;
+    }
     let jobId;
     if (existing) {
       jobId = existing.id;
-      db.prepare("UPDATE jobs SET title=?, company=?, location=?, jd_text=?, requirements=?, match=?, updated_at=datetime('now') WHERE id=?")
-        .run(reqs.title.slice(0, 200), reqs.company.slice(0, 120), reqs.location.slice(0, 120), text, JSON.stringify(reqs), JSON.stringify(match), jobId);
+      db.prepare("UPDATE jobs SET title=?, company=?, location=?, jd_text=?, requirements=?, match=?, job_key=?, updated_at=datetime('now') WHERE id=?")
+        .run(reqs.title.slice(0, 200), reqs.company.slice(0, 120), reqs.location.slice(0, 120), text, JSON.stringify(reqs), JSON.stringify(match), existing.job_key || baseKey, jobId);
     } else {
-      const info = db.prepare('INSERT INTO jobs (user_id, title, company, location, url, source, jd_text, requirements, match) VALUES (?,?,?,?,?,?,?,?,?)')
-        .run(req.user.id, reqs.title.slice(0, 200), reqs.company.slice(0, 120), reqs.location.slice(0, 120), url, source, text, JSON.stringify(reqs), JSON.stringify(match));
+      const info = db.prepare('INSERT INTO jobs (user_id, title, company, location, url, source, jd_text, requirements, match, job_key) VALUES (?,?,?,?,?,?,?,?,?,?)')
+        .run(req.user.id, reqs.title.slice(0, 200), reqs.company.slice(0, 120), reqs.location.slice(0, 120), url, source, text, JSON.stringify(reqs), JSON.stringify(match), jobKey);
       jobId = Number(info.lastInsertRowid);
     }
     const jobR = jobRow(req.user.id, jobId);
@@ -237,12 +283,73 @@ export function createApp({ dbPath = process.env.DB_PATH || 'data/tailorkit.db',
     res.status(t.quotaExceeded ? 402 : 201).json(t.quotaExceeded ? { error: 'You have used all free tailored resumes this month.', ...t } : t);
   });
 
-  app.get('/api/jobs/:id/screening', auth, (req, res) => {
-    const profile = needProfile(req.user.id);
-    const r = jobRow(req.user.id, req.params.id);
+  // ---------- interview prep (company research + brief + questions), cached per job
+  const prepContextFor = (user, profile, r) => {
     const job = jobOut(r);
     const best = db.prepare('SELECT data FROM resumes WHERE job_id = ? ORDER BY id DESC LIMIT 1').get(r.id);
-    res.json(buildScreening({ resume: best ? j(best.data, profile.resume) : profile.resume, facts: { ...profile.facts, yearsExperience: profile.facts.yearsExperience }, job: { ...job.requirements, title: job.title, company: job.company }, match: job.match }));
+    return {
+      resume: best ? j(best.data, profile.resume) : profile.resume,
+      derived: deriveProfile(profile.resume), jdText: r.jd_text, match: job.match,
+      job: { ...job.requirements, title: job.title || job.requirements.title, company: job.company || job.requirements.company, location: job.location },
+    };
+  };
+
+  app.get('/api/jobs/:id/prep', auth, (req, res) => {
+    const profile = needProfile(req.user.id);
+    const r = jobRow(req.user.id, req.params.id);
+    const row = db.prepare('SELECT data, created_at FROM job_prep WHERE job_id = ?').get(r.id);
+    if (!row) return res.json({ prep: null, aiEnabled: aiEnabled() });
+    const stored = j(row.data, null);
+    const profAt = db.prepare('SELECT updated_at FROM profiles WHERE user_id = ?').get(req.user.id)?.updated_at || '';
+    const stale = profAt > row.created_at || (stored?.prep?.mode === 'basic' && aiEnabled());
+    res.json({ prep: stored.prep, research: stored.research, createdAt: row.created_at, stale, aiEnabled: aiEnabled() });
+  });
+
+  app.post('/api/jobs/:id/prep', auth, async (req, res) => {
+    const profile = needProfile(req.user.id);
+    const r = jobRow(req.user.id, req.params.id);
+    const send = sseStart(res);
+    try {
+      const ctx = prepContextFor(req.user, profile, r);
+      send({ type: 'step', label: 'Reading the job description…' });
+      let research = null;
+      if (ctx.job.company) research = await getCompanyResearch(db, { company: ctx.job.company, role: ctx.job.title, location: ctx.job.location, refresh: !!req.body?.refresh, onStep: (label) => send({ type: 'step', label }) });
+      send({ type: 'step', label: aiEnabled() ? 'Writing your personalised prep…' : 'Building your prep…' });
+      const prep = await buildPrep({ ...ctx, research });
+      db.prepare("INSERT INTO job_prep (job_id, data, created_at) VALUES (?,?,datetime('now')) ON CONFLICT(job_id) DO UPDATE SET data=excluded.data, created_at=excluded.created_at").run(r.id, JSON.stringify({ prep, research }));
+      send({ type: 'result', prep, research, stale: false });
+    } catch (e) {
+      console.error('[prep]', e);
+      send({ type: 'error', message: 'Could not build your prep. Please try again.' });
+    }
+    res.end();
+  });
+
+  app.post('/api/jobs/:id/chat', auth, async (req, res) => {
+    const profile = needProfile(req.user.id);
+    const r = jobRow(req.user.id, req.params.id);
+    if (!aiEnabled()) throw httpError(409, 'Ask AI needs an Anthropic API key. See Settings.');
+    // Keep a valid alternating history that starts and ends with the user.
+    const cleaned = [];
+    for (const m of (Array.isArray(req.body?.messages) ? req.body.messages : []).slice(-14)) {
+      if (!['user', 'assistant'].includes(m?.role)) continue;
+      const content = String(m.content || '').slice(0, 4000).trim();
+      if (!content) continue;
+      if (cleaned.length && cleaned.at(-1).role === m.role) cleaned.at(-1).content += `\n${content}`; else cleaned.push({ role: m.role, content });
+    }
+    while (cleaned.length && cleaned[0].role !== 'user') cleaned.shift();
+    if (!cleaned.length || cleaned.at(-1).role !== 'user') throw httpError(400, 'Ask a question first.');
+    const ctx = prepContextFor(req.user, profile, r);
+    const stored = j(db.prepare('SELECT data FROM job_prep WHERE job_id = ?').get(r.id)?.data, null);
+    const send = sseStart(res);
+    try {
+      await streamChat({ system: chatSystem({ ...ctx, research: stored?.research || null }), messages: cleaned, onText: (text) => send({ type: 'text', text }) });
+      send({ type: 'done' });
+    } catch (e) {
+      console.warn('[chat]', e.message);
+      send({ type: 'error', message: e.status === 401 ? 'The API key was rejected.' : 'The AI request failed. Please try again.' });
+    }
+    res.end();
   });
 
   app.get('/api/skill-gaps', auth, (req, res) => {

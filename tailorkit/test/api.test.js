@@ -12,11 +12,16 @@ const api = async (path, { method = 'GET', body, headers = {}, raw } = {}) => {
   if (raw) return res;
   return { status: res.status, data: await res.json().catch(() => null) };
 };
+const sse = async (path, body = {}) => {
+  const res = await fetch(base + path, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  assert.equal(res.status, 200);
+  return (await res.text()).split('\n\n').filter((l) => l.startsWith('data: ')).map((l) => JSON.parse(l.slice(6)));
+};
 const uploadForm = (buf, name) => { const f = new FormData(); f.append('file', new Blob([buf]), name); return f; };
 
 before(async () => {
   delete process.env.ANTHROPIC_API_KEY;
-  const app = createApp({ dbPath: ':memory:', freeLimit: 2 });
+  const app = createApp({ dbPath: ':memory:', freeLimit: 4 });
   await new Promise((r) => { server = app.listen(0, r); });
   base = `http://127.0.0.1:${server.address().port}`;
 });
@@ -120,24 +125,51 @@ test('tracking: status changes, screening prep, skill gaps', async () => {
   assert.equal(p.data.job.status, 'applied');
   assert.ok(p.data.job.appliedAt);
   assert.equal((await api(`/api/jobs/${jobId}`, { method: 'PATCH', body: { status: 'bogus' } })).status, 400);
-  const s = await api(`/api/jobs/${jobId}/screening`);
-  assert.equal(s.status, 200);
-  const qs = s.data.questions.map((q) => q.question);
-  assert.ok(qs.includes('What is your notice period?'));
-  assert.ok(s.data.questions.find((q) => q.question === 'What is your notice period?').needsInput);
+  const pr = await sse(`/api/jobs/${jobId}/prep`);
+  const result = pr.find((e) => e.type === 'result');
+  assert.ok(result, 'prep stream ends with a result');
+  assert.equal(result.prep.mode, 'basic');
+  assert.ok(pr.some((e) => e.type === 'step'));
+  const qs = result.prep.questions.map((q) => q.question);
+  assert.ok(qs.some((q) => q.includes('notice period')));
+  // The candidate is never asked to fill anything in: every question has a drafted answer.
+  assert.ok(result.prep.questions.every((q) => q.answer && q.answer.length > 20), 'every question has an answer');
   assert.ok(qs.some((q) => q.startsWith('Walk me through')));
+  const cached = await api(`/api/jobs/${jobId}/prep`);
+  assert.equal(cached.data.prep.questions.length, result.prep.questions.length);
   const g = await api('/api/skill-gaps');
   assert.equal(g.data.totalJobs, 1);
 });
 
+test('capture identity: tracking params do not duplicate; a different posting at the same address is its own job', async () => {
+  const before = (await api('/api/jobs')).data.jobs.length;
+  const a = await api('/api/capture', { method: 'POST', body: { text: jdTxt.replace('Senior Backend Engineer', 'Product Manager Growth'), url: 'https://spa.example/jobs/search/?currentJobId=111&utm_source=x&trk=abc', externalId: '111' } });
+  assert.equal(a.status, 201);
+  const again = await api('/api/capture', { method: 'POST', body: { text: jdTxt.replace('Senior Backend Engineer', 'Product Manager Growth'), url: 'https://spa.example/jobs/search/?currentJobId=111&trk=zzz', externalId: '111' } });
+  assert.equal(again.status, 200);
+  assert.equal(again.data.job.id, a.data.job.id);
+  // Same externalId/address, but the page now shows a totally different job (single-page app): must NOT overwrite the first.
+  const nike = 'Product Management Intern\nNike\nRequirements\n- SQL and Excel\n- Stakeholder management and A/B testing\nGood to have\n- Tableau\nYou will own the roadmap for athlete experiences across apps and run experiments with design and engineering.';
+  const other = await api('/api/capture', { method: 'POST', body: { text: nike, url: 'https://spa.example/jobs/search/?currentJobId=111', externalId: '111' } });
+  assert.equal(other.data.existing, false);
+  assert.notEqual(other.data.job.id, a.data.job.id);
+  assert.equal(other.data.job.company, 'Nike');
+  assert.equal((await api(`/api/jobs/${a.data.job.id}`)).data.job.title, 'Product Manager Growth', 'first job untouched');
+  assert.equal((await api('/api/jobs')).data.jobs.length, before + 2);
+  // Re-capturing the second one finds it again (not a third copy).
+  const re = await api('/api/capture', { method: 'POST', body: { text: nike, url: 'https://spa.example/jobs/search/?currentJobId=111', externalId: '111' } });
+  assert.equal(re.data.existing, true);
+  assert.equal(re.data.job.id, other.data.job.id);
+});
+
 test('free plan limit blocks new tailoring but still logs the job', async () => {
   const ok = await api('/api/capture', { method: 'POST', body: { text: jdTxt.replace('Senior Backend Engineer', 'Backend Engineer II'), url: 'https://jobs.example/b/2' } });
-  assert.equal(ok.data.quota.used, 2);
+  assert.equal(ok.data.quota.used, 4);
   const over = await api('/api/capture', { method: 'POST', body: { text: jdTxt.replace('Senior Backend Engineer', 'Platform Engineer'), url: 'https://jobs.example/c/3' } });
   assert.equal(over.status, 201);
   assert.equal(over.data.quotaExceeded, true);
   assert.equal(over.data.resumeId, null);
-  assert.equal((await api('/api/jobs')).data.jobs.length, 3);
+  assert.equal((await api('/api/jobs')).data.jobs.length, 5);
 });
 
 test('users cannot read each other\'s data', async () => {

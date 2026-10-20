@@ -6,7 +6,8 @@
     "start": "node server/index.js",
     "dev": "node --watch server/index.js",
     "test": "node --no-warnings --test --test-reporter=spec test/*.test.js",
-    "e2e": "node --no-warnings test/e2e/run.mjs"
+    "e2e": "node --no-warnings test/e2e/run.mjs",
+    "e2e:ai": "node --no-warnings test/e2e/ai.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.135.0",

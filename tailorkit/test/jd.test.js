@@ -51,3 +51,9 @@ test('byline is still ignored when the bullet character is garbled by a wrong ch
 test('company names do not run across line breaks', () => {
   assert.equal(extractBasic('We are hiring a Designer at Orbit\nWe value Figma skills').company, 'Orbit');
 });
+
+test('company on its own line next to the title is found; role/section lines are not mistaken for it', () => {
+  assert.equal(extractBasic('Product Management Intern\nNike\nRequirements\n- SQL').company, 'Nike');
+  assert.equal(extractBasic('Nike · Bengaluru\nProduct Manager\nRequirements\n- SQL').company, 'Nike');
+  assert.equal(extractBasic('Product Manager\nRequirements\n- SQL and Excel').company, '');
+});

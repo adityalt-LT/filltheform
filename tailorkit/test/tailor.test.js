@@ -5,7 +5,8 @@ import { parseResumeText, resumePlainText } from '../server/lib/resume-parse.js'
 import { tailorResume, numbersPreserved } from '../server/lib/tailor.js';
 import { scoreMatch } from '../server/lib/match.js';
 import { highlightMetrics } from '../server/lib/render.js';
-import { buildScreening } from '../server/lib/screening.js';
+import { buildBasicPrep } from '../server/lib/prep.js';
+import { deriveProfile } from '../server/lib/derive.js';
 
 const resume = parseResumeText(readFileSync(new URL('../fixtures/sample-resume.txt', import.meta.url), 'utf8'));
 const job = { title: 'Backend Engineer', mustHave: ['Docker', 'Kubernetes', 'Airflow'], niceToHave: [], anyOf: [], minYears: 3 };
@@ -57,12 +58,10 @@ test('score is explainable and "A or B" requirements are satisfied by either', (
   assert.deepEqual(m2.missingMust, ['Kubernetes']);
 });
 
-test('screening prep: SQL evidence does not borrow PostgreSQL bullets; unknown facts need input', () => {
-  const s = buildScreening({ resume, facts: {}, job: { title: 'Analyst', company: 'Zeta', minYears: 2 }, match: { matchedMust: ['SQL'], missingMust: ['Tableau'], yearsExperience: 6 } });
-  const sql = s.questions.find((q) => q.question.includes('experience with SQL'));
-  assert.equal(sql.points.length, 0);
-  assert.ok(s.questions.find((q) => q.question.startsWith('What is your notice period')).needsInput);
-  const s2 = buildScreening({ resume, facts: { noticePeriod: '30 days' }, job: { title: 'Analyst', company: 'Zeta' }, match: { matchedMust: [], missingMust: [] } });
-  const np = s2.questions.find((q) => q.question.startsWith('What is your notice period'));
-  assert.equal(np.answer, '30 days'); assert.equal(np.needsInput, false);
+test('interview prep: SQL evidence does not borrow PostgreSQL bullets; every question has an answer', () => {
+  const prep = buildBasicPrep({ resume, derived: deriveProfile(resume), job: { title: 'Analyst', company: 'Zeta', minYears: 2, mustHave: ['SQL', 'Tableau'] }, match: { matchedMust: ['SQL'], missingMust: ['Tableau'], yearsExperience: 6 }, research: null });
+  const sql = prep.questions.find((q) => q.question.includes('experience with SQL'));
+  assert.equal(sql.evidence.length, 0);
+  assert.ok(prep.questions.every((q) => q.answer.length > 20));
+  assert.ok(!JSON.stringify(prep).includes('needsInput'));
 });

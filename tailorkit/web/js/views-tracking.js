@@ -11,10 +11,10 @@ export async function trackingView(me, go) {
   const host = h('div', { class: 'stack' });
   host.append(h('div', { class: 'row between' },
     h('div', null, h('h1', null, 'Tracking'), h('p', { class: 'muted' }, 'Every job you capture lands here. Drag a card to update its stage.')),
-    me.quota.limit != null && h('span', { class: 'chip' }, `${me.quota.used} of ${me.quota.limit} free tailored resumes used this month`)));
+    h('div', { class: 'muted small' }, `${jobs.length} job${jobs.length === 1 ? '' : 's'}`)));
 
   if (!jobs.length) {
-    host.append(h('div', { class: 'card empty' }, h('div', { class: 'big' }, '🧭'), h('h2', null, 'No jobs yet'),
+    host.append(h('div', { class: 'card empty' }, h('h2', null, 'No jobs yet'),
       h('p', { class: 'muted' }, 'Open any job page or LinkedIn hiring post, click the extension and capture it. It will show up here with a match score and a tailored resume.'),
       h('div', { style: 'text-align:left;max-width:560px;margin:14px auto 0' }, EXT_STEPS())));
     return host;
@@ -37,7 +37,7 @@ export async function trackingView(me, go) {
         h('div', { class: 'row between', style: 'gap:6px;flex-wrap:nowrap;align-items:flex-start' }, h('div', { class: 't' }, j.title || 'Untitled role'), scorePill(j.match)),
         h('div', { class: 'c' }, [j.company, j.location].filter(Boolean).join(' · ') || j.source || ''),
         h('div', { class: 'row', style: 'margin-top:6px;gap:6px' },
-          j.resumes.length ? h('span', { class: 'chip good' }, 'Resume ready') : h('span', { class: 'chip warn' }, 'No resume yet'),
+          j.resumes.length ? h('span', { class: 'chip good' }, 'Resume ready') : h('span', { class: 'chip' }, 'No resume yet'),
           h('span', { class: 'muted small' }, fmtDate(j.createdAt)))));
     }
     board.append(col);

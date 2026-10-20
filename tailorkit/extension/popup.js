@@ -46,13 +46,16 @@ function extractPage() {
   const out = { url: location.href.split('#')[0], title: '', company: '', location: '', text: '', source: host.replace(/^www\./, '') };
 
   const sel = window.getSelection ? window.getSelection().toString() : '';
-  // Structured data many career pages publish for search engines.
+  // Structured data many career pages publish for search engines. Single-page sites (LinkedIn, Workday...) leave the
+  // PREVIOUS job's data in the page when you click another job, so only trust it when it matches what is on screen.
+  const visible = (document.body.innerText || '').toLowerCase();
+  const onScreen = (t) => !!t && visible.includes(String(t).toLowerCase().replace(/\s+/g, ' ').trim());
   let ld = null;
   for (const s of document.querySelectorAll('script[type="application/ld+json"]')) {
     try {
       const data = JSON.parse(s.textContent);
       const list = Array.isArray(data) ? data : data['@graph'] || [data];
-      const jp = list.find((x) => x && (x['@type'] === 'JobPosting' || (Array.isArray(x['@type']) && x['@type'].includes('JobPosting'))));
+      const jp = list.find((x) => x && (x['@type'] === 'JobPosting' || (Array.isArray(x['@type']) && x['@type'].includes('JobPosting'))) && onScreen(x.title));
       if (jp) { ld = jp; break; }
     } catch { /* ignore invalid JSON-LD */ }
   }
@@ -66,6 +69,11 @@ function extractPage() {
     out.location = addr && addr.address ? [addr.address.addressLocality, addr.address.addressRegion].filter(Boolean).join(', ') : '';
     out.jsonld = clean(parsed.body.textContent);
   }
+
+  // A stable id for "this exact posting" so two different jobs on the same page address are never confused.
+  const q2 = new URLSearchParams(location.search);
+  out.externalId = q2.get('currentJobId') || q2.get('jobId') || q2.get('job_id') || q2.get('gh_jid') || q2.get('jid') || q2.get('reqId')
+    || (location.pathname.match(/\/jobs\/view\/(?:[^/]*-)?(\d{6,})/) || [])[1] || (location.pathname.match(/-(\d{6,})\/?$/) || [])[1] || '';
 
   if (/linkedin\.com$/.test(host)) {
     if (/\/jobs\//.test(location.pathname)) out.title = out.title || text1(['.job-details-jobs-unified-top-card__job-title h1', '.jobs-unified-top-card__job-title', 'h1']);
@@ -99,7 +107,7 @@ async function capture(btn) {
     const [{ result: page }] = await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: extractPage });
     if (!page || page.text.length < 80) throw new Error('Not enough text found. Select the job description on the page and try again.');
     btn.textContent = 'Matching to your resume…';
-    const res = await callApi('/api/capture', { method: 'POST', body: { url: page.url, source: page.source, text: page.text, hints: { title: page.selection || !page.reliableTitle ? '' : page.title, company: page.company, location: page.location } } });
+    const res = await callApi('/api/capture', { method: 'POST', body: { url: page.url, externalId: page.externalId, source: page.source, text: page.text, hints: { title: page.selection || !page.reliableTitle ? '' : page.title, company: page.company, location: page.location } } });
     await showResult(res);
   } catch (e) {
     if (e.status === 401) return loginScreen('Please sign in again.');
