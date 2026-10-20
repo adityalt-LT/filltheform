@@ -6,7 +6,7 @@ import { openDb } from './db.js';
 import { hashPassword, verifyPassword, createSession, userFromToken, destroySession, rateLimiter } from './auth.js';
 import { extractText, parseResumeText, parseWarnings, resumePlainText } from './lib/resume-parse.js';
 import { sanitizeResume, httpError } from './lib/model.js';
-import { extractJob } from './lib/jd.js';
+import { extractJob, pickTitle, cleanTitle } from './lib/jd.js';
 import { scoreMatch, estimateYears } from './lib/match.js';
 import { tailorResume, suggestRewrites } from './lib/tailor.js';
 import { renderHtml, renderPdf } from './lib/render.js';
@@ -199,7 +199,15 @@ export function createApp({ dbPath = process.env.DB_PATH || 'data/tailorkit.db',
     if (text.length < 80) throw httpError(422, 'Not enough text on this page. Select the job description and try again.');
     const url = String(req.body?.url || '').slice(0, 1000);
     const source = String(req.body?.source || '').slice(0, 60);
-    const hints = { title: clean(req.body?.hints?.title), company: clean(req.body?.hints?.company), location: clean(req.body?.hints?.location) };
+    // Hints come from scraping the page, which can grab the wrong element. Structured data is trusted; anything else
+    // must be about the text we captured, otherwise we work the title out from the text (or the AI does).
+    const hin = req.body?.hints || {};
+    const trusted = hin.titleTrusted === true && !!clean(hin.title);
+    const title = trusted ? clean(hin.title) : pickTitle([hin.title, ...(Array.isArray(hin.titleCandidates) ? hin.titleCandidates.slice(0, 12) : [])], text);
+    const lowText = text.toLowerCase();
+    const mentioned = (v) => !!clean(v) && lowText.includes(clean(v).toLowerCase());
+    const believe = (v) => (trusted || title || mentioned(v)) ? clean(v) : '';
+    const hints = { title: cleanTitle(title), company: believe(hin.company), location: believe(hin.location) };
 
     const reqs = await extractJob(text, hints);
     const match = rescore(profile, reqs);

@@ -11,6 +11,7 @@ export async function jobView(id, me, go) {
   let job; let tab = new URLSearchParams(location.hash.split('?')[1] || '').get('tab') || 'overview';
   const state = { prep: null, research: null, stale: false, createdAt: '', running: false, steps: [], error: '', loaded: false };
   const chat = { messages: [], busy: false };
+  let editing = false;
 
   const load = async () => { ({ job } = await api(`/api/jobs/${id}`)); };
   await load();
@@ -210,6 +211,16 @@ export async function jobView(id, me, go) {
       suggest, thread, h('div', { class: 'composer' }, input, send));
   }
 
+  // Safety net: if extraction got the title/company/location wrong, fix it here. Prep and matching use these.
+  function editForm() {
+    const f = { title: h('input', { type: 'text', value: job.title }), company: h('input', { type: 'text', value: job.company }), location: h('input', { type: 'text', value: job.location }) };
+    return h('div', { class: 'card', style: 'margin-top:12px' }, h('div', { class: 'grid3' },
+      h('label', { class: 'field' }, 'Job title', f.title), h('label', { class: 'field' }, 'Company', f.company), h('label', { class: 'field' }, 'Location', f.location)),
+      h('div', { class: 'row', style: 'margin-top:12px' }, h('button', { class: 'btn primary sm', onclick: async () => {
+        try { const r = await api(`/api/jobs/${id}`, { method: 'PATCH', body: { title: f.title.value, company: f.company.value, location: f.location.value } }); job = { ...job, ...r.job }; editing = false; state.stale = true; toast('Details updated'); draw(); } catch (e) { toast(e.message, true); }
+      } }, 'Save'), h('span', { class: 'muted small' }, 'Interview prep will refresh for the new company and role.')));
+  }
+
   function jdTab() { return h('div', { class: 'card' }, h('h2', null, 'Captured job text'), h('p', { class: 'muted small' }, 'Exactly what the extension read from the page.'), h('pre', { class: 'jd' }, job.jdText || '')); }
 
   function draw() {
@@ -221,9 +232,11 @@ export async function jobView(id, me, go) {
       h('a', { href: '#/tracking', class: 'small muted' }, '← Tracking'),
       h('div', { class: 'row between', style: 'margin-top:8px;align-items:flex-start' },
         h('div', null, h('h1', null, job.title || 'Untitled role'), h('div', { class: 'muted' }, [job.company, job.location, job.source].filter(Boolean).join(' · ') || 'Company not detected'),
-          job.url && h('a', { class: 'small', href: job.url, target: '_blank', rel: 'noopener noreferrer' }, 'Open original posting ↗')),
+          h('div', { class: 'row', style: 'gap:12px' }, job.url && h('a', { class: 'small', href: job.url, target: '_blank', rel: 'noopener noreferrer' }, 'Open original posting ↗'),
+            h('button', { class: 'btn sm ghost', onclick: () => { editing = !editing; draw(); } }, editing ? 'Cancel' : 'Edit details'))),
         h('div', { class: 'row' }, scorePill(job.match), status,
           h('button', { class: 'btn sm ghost danger', onclick: async () => { if (!confirm('Delete this job and its tailored resumes?')) return; await api(`/api/jobs/${id}`, { method: 'DELETE' }); toast('Deleted'); go('#/tracking'); } }, 'Delete'))),
+      editing && editForm(),
       h('div', { class: 'tabs', role: 'tablist' }, [['overview', 'Overview', null], ['prep', 'Interview prep', 'sparkle'], ['chat', 'Ask AI', 'chat'], ['jd', 'Job text', null]].map(([k, l, ic]) =>
         h('button', { class: tab === k ? 'on' : '', role: 'tab', onclick: () => { tab = k; draw(); } }, ic && icon(ic, 16), l))));
     if (tab === 'overview') host.append(overview(), h('div', { class: 'card' }, h('h3', null, 'Notes'), notes, h('div', { style: 'margin-top:10px' }, h('button', { class: 'btn sm', onclick: async () => { try { await api(`/api/jobs/${id}`, { method: 'PATCH', body: { notes: notes.value } }); toast('Notes saved'); } catch (e) { toast(e.message, true); } } }, 'Save notes'))));

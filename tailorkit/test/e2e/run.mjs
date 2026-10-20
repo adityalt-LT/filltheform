@@ -121,6 +121,14 @@ try {
     await jobTab.close(); await pop.close();
   });
 
+  await step('job-list layout (hidden "Selected, Nykaa…" heading next to the real job): title and company come from the job on screen', async () => {
+    const { pop, jobTab } = await capture('joblist.html');
+    const text = await pop.locator('.wrap').innerText();
+    assert.match(text, /Product Manager II/); assert.match(text, /Kuku/); assert.doesNotMatch(text, /Nykaa|Selected/);
+    await shot(pop, '11-popup-result');
+    await jobTab.close(); await pop.close();
+  });
+
   await step('job page: Kubernetes is the only must-have gap; confirming it updates the score', async () => {
     await dash.goto(`${DASH}/#/tracking`); await dash.waitForSelector('.board');
     await dash.click('.jcard:has-text("Senior Backend")'); await dash.waitForSelector('.ring');
@@ -156,7 +164,7 @@ try {
   await step('the three captures are three separate jobs on the board', async () => {
     await dash.goto(`${DASH}/#/tracking`); await dash.waitForSelector('.board');
     const titles = await dash.locator('.jcard .t').allInnerTexts();
-    for (const t of ['Senior Backend Engineer', 'Product Analyst', 'Product Management Intern']) assert.ok(titles.includes(t), `${t} in ${titles}`);
+    for (const t of ['Senior Backend Engineer', 'Product Analyst', 'Product Management Intern', 'Product Manager II']) assert.ok(titles.includes(t), `${t} in ${titles}`);
     await shot(dash, '05-board');
     await assertClean(dash, 'tracking');
   });

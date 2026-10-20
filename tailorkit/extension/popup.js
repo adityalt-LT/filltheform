@@ -18,7 +18,7 @@ function el(tag, props = {}, ...kids) {
   for (const kid of kids.flat()) if (kid !== false && kid != null) e.append(kid instanceof Node ? kid : document.createTextNode(kid));
   return e;
 }
-const show = (...nodes) => { root.replaceChildren(el('div', { class: 'wrap' }, el('div', { class: 'brand' }, 'Tailor', el('span', {}, ' & Apply')), ...nodes)); };
+const show = (...nodes) => { root.replaceChildren(el('div', { class: 'wrap' }, el('div', { class: 'brand' }, 'Tailor & Apply'), ...nodes)); };
 
 async function callApi(path, { method = 'GET', body } = {}) {
   const { server, token } = await store.get();
@@ -91,9 +91,16 @@ function extractPage() {
   }
   if (out.jsonld && out.jsonld.length > 200) out.text = `${out.title}\n${out.company}\n${out.location}\n\n${out.jsonld}`;
   if (sel && sel.trim().length >= 80) { out.text = clean(sel); out.selection = true; }
-  // Page <title>s are often generic ("Feed | LinkedIn"), so only structured/site-specific titles are trusted as hints.
-  out.reliableTitle = !!out.title;
-  out.title = out.title || clean(document.title).slice(0, 160);
+  // Titles from structured data are trusted. Everything else is only a CANDIDATE: the server keeps one only if it
+  // matches the captured text (page scraping can grab a card from a job list, a hidden heading, or site chrome).
+  out.titleTrusted = !!ld && !!out.title;
+  const cands = [];
+  if (!out.titleTrusted && out.title) cands.push(out.title);
+  for (const el of [...document.querySelectorAll('h1')].slice(0, 6)) cands.push(clean(el.innerText).split('\n')[0]);
+  const og = document.querySelector('meta[property="og:title"]'); if (og) cands.push(og.content);
+  for (const part of clean(document.title).split(/\s+[|\u2013\u2014-]\s+/)) cands.push(part);
+  out.titleCandidates = [...new Set(cands.map((c) => String(c || '').trim()).filter((c) => c.length >= 3 && c.length <= 120))].slice(0, 12);
+  out.title = out.titleTrusted ? out.title : '';
   out.text = out.text.slice(0, 40000);
   delete out.jsonld;
   return out;
@@ -107,7 +114,7 @@ async function capture(btn) {
     const [{ result: page }] = await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: extractPage });
     if (!page || page.text.length < 80) throw new Error('Not enough text found. Select the job description on the page and try again.');
     btn.textContent = 'Matching to your resume…';
-    const res = await callApi('/api/capture', { method: 'POST', body: { url: page.url, externalId: page.externalId, source: page.source, text: page.text, hints: { title: page.selection || !page.reliableTitle ? '' : page.title, company: page.company, location: page.location } } });
+    const res = await callApi('/api/capture', { method: 'POST', body: { url: page.url, externalId: page.externalId, source: page.source, text: page.text, hints: { title: page.title, titleTrusted: page.titleTrusted && !page.selection, titleCandidates: page.titleCandidates, company: page.company, location: page.location } } });
     await showResult(res);
   } catch (e) {
     if (e.status === 401) return loginScreen('Please sign in again.');
@@ -118,13 +125,13 @@ async function capture(btn) {
 
 async function showResult({ job, resumeId, quotaExceeded, quota, existing }) {
   const m = job.match || {};
-  const color = m.band === 'strong' ? 'var(--good)' : m.band === 'partial' ? '#d97706' : 'var(--bad)';
+  const color = m.band === 'strong' ? 'var(--good)' : m.band === 'partial' ? '#d9921a' : 'var(--bad)';
   const { server } = await store.get();
   const base = server.replace(/\/$/, '');
   const must = m.missingMust || []; const nice = m.missingNice || [];
   show(
     el('h1', { style: 'margin-top:10px' }, existing ? 'Updated in your tracker' : 'Saved to your tracker'),
-    el('div', {}, el('strong', {}, job.title || 'Untitled role'), el('div', { class: 'muted small' }, [job.company, job.location].filter(Boolean).join(' · '))),
+    el('div', {}, el('div', { class: 'title' }, job.title || 'Untitled role'), el('div', { class: 'muted small' }, [job.company, job.location].filter(Boolean).join(' · ') || 'Company not detected'), el('div', { class: 'small muted', style: 'margin-top:2px' }, 'Wrong title or company? Edit it in the dashboard.')),
     el('div', { class: 'score' }, el('div', { class: 'ring', style: `--p:${m.score ?? 0};--c:${color}` }, el('i', {}, m.score == null ? '–' : String(m.score))),
       el('div', {}, el('strong', {}, { strong: 'Strong match', partial: 'Partial match', weak: 'Weak match' }[m.band] || 'No clear requirements'), el('div', { class: 'muted small' }, 'Match vs this job description'))),
     must.length > 0 && el('div', {}, el('div', { class: 'small muted' }, 'Required, missing from your resume'), el('div', { class: 'chips' }, must.slice(0, 6).map((s) => el('span', { class: 'chip' }, s)))),

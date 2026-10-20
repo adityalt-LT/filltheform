@@ -94,6 +94,26 @@ function guessCompany(body, lines = []) {
   return '';
 }
 
+// ---- Page scraping can pick up the wrong element (a card in a job list, site chrome, a stale heading).
+// A title is only trusted if it is actually about the text we captured.
+const JUNK_PREFIX = /^(selected|viewed|saved|new|promoted|verified|actively recruiting|easy apply)[,:]\s*/i;
+const SITE_CHROME = /^(linkedin|jobs?|job search|home|feed|search|notifications|messaging|naukri(\.com)?|indeed|glassdoor|careers?|apply|menu|\(\d+\).*)$/i;
+export const cleanTitle = (t) => String(t || '').replace(/\s+/g, ' ').replace(JUNK_PREFIX, '').trim().slice(0, 120);
+const wordSet = (t) => new Set(String(t).toLowerCase().replace(/[^a-z0-9+#]+/g, ' ').split(/\s+/).filter(Boolean));
+
+export function titleOnPage(title, text) {
+  const tokens = [...wordSet(title)];
+  if (!tokens.length || SITE_CHROME.test(title.trim())) return false;
+  const words = wordSet(String(text).slice(0, 8000));
+  return tokens.filter((w) => words.has(w)).length / tokens.length >= 0.9;
+}
+
+// Picks the first candidate that matches the captured text, preferring ones that look like a job title.
+export function pickTitle(candidates, text) {
+  const ok = [...new Set((candidates || []).map(cleanTitle).filter((c) => c.length >= 3))].filter((c) => titleOnPage(c, text));
+  return ok.find((c) => ROLE_WORD.test(c)) || ok[0] || '';
+}
+
 export async function extractJob(text, hints = {}) {
   const body = String(text || '').slice(0, 14000);
   const ai = await askJSON(

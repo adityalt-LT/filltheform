@@ -172,6 +172,20 @@ test('free plan limit blocks new tailoring but still logs the job', async () => 
   assert.equal((await api('/api/jobs')).data.jobs.length, 5);
 });
 
+test('title hints are verified against the captured text: a card from a job list, site chrome or a stale heading is not the job', async () => {
+  const kuku = 'Product Manager II\nKuku\nBengaluru, Karnataka\nAbout the job\nOwn the roadmap for the audio app. You will work with SQL, A/B testing and stakeholder management every day.';
+  const r = await api('/api/capture', { method: 'POST', body: { text: kuku, url: 'https://li.example/jobs/collections/recommended/?currentJobId=999', externalId: '999', hints: { company: 'Kuku', titleCandidates: ['Selected, Nykaa - Product Manager II', 'Jobs', 'LinkedIn', 'Product Manager II', 'Kuku'] } } });
+  assert.equal(r.data.job.title, 'Product Manager II');
+  assert.equal(r.data.job.company, 'Kuku');
+  // every candidate is wrong: the title is worked out from the text instead of using a wrong one
+  const r2 = await api('/api/capture', { method: 'POST', body: { text: kuku.replace('Kuku', 'Orbit').replace('audio app', 'travel app'), url: 'https://li.example/jobs/view/1000', externalId: '1000', hints: { company: 'Wrong Co', titleCandidates: ['Selected, Nykaa - Senior Designer', 'Feed | LinkedIn'] } } });
+  assert.equal(r2.data.job.title, 'Product Manager II');
+  assert.notEqual(r2.data.job.company, 'Wrong Co', 'a company hint that is not on the page is not believed when the title hint was wrong');
+  // structured data is trusted as given
+  const r3 = await api('/api/capture', { method: 'POST', body: { text: kuku + ' extra words to make it different from the others entirely', url: 'https://li.example/jobs/view/1001', externalId: '1001', hints: { title: 'Head of Product', titleTrusted: true, company: 'Zed' } } });
+  assert.equal(r3.data.job.title, 'Head of Product');
+});
+
 test('users cannot read each other\'s data', async () => {
   const other = await api('/api/auth/signup', { method: 'POST', body: { email: 'other@example.com', password: 'another pass' } });
   const mine = token; token = other.data.token;

@@ -1,18 +1,21 @@
-:root { --bg:#fff; --ink:#1d1b16; --muted:#6a665c; --line:#e4e0d6; --brand:#c2410c; --good:#166534; --good-bg:#e3f4e8; --warn:#92400e; --warn-bg:#fef0d2; --bad:#b42318; --bad-bg:#fde8e6; }
-@media (prefers-color-scheme: dark) { :root { --bg:#1f1c17; --ink:#f1ede4; --muted:#a39d8f; --line:#342f27; --brand:#f08a4b; --good:#7ad99a; --good-bg:#17301f; --warn:#f2c26b; --warn-bg:#3a2d10; --bad:#ff9a8f; --bad-bg:#3a1b18; } }
+/* Neutral, white, conversational: matches the dashboard. */
+:root { --bg:#fff; --ink:#0d0d0d; --muted:#6b6b6b; --line:#e7e7e7; --soft:#f7f7f8; --btn:#0d0d0d; --btn-ink:#fff; --good:#0b7a5a; --good-bg:#e7f5ef; --warn:#8a5a00; --warn-bg:#fff3d4; --bad:#c0352b; --bad-bg:#fdecea; }
+@media (prefers-color-scheme: dark) { :root { --bg:#212121; --ink:#ececec; --muted:#9b9b9b; --line:#363636; --soft:#2a2a2a; --btn:#ececec; --btn-ink:#0d0d0d; --good:#6fd3ac; --good-bg:#153326; --warn:#f0c36b; --warn-bg:#3a2f12; --bad:#ff9c92; --bad-bg:#3b1b18; } }
 * { box-sizing: border-box; }
-body { width: 340px; margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 -apple-system, "Segoe UI", Roboto, Arial, sans-serif; }
-.wrap { padding: 14px; } h1 { font-size: 15px; margin: 0 0 8px; } .brand { font-weight: 800; } .brand span { color: var(--brand); }
+body { width: 340px; margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.5 ui-sans-serif, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+.wrap { padding: 16px; } h1 { font-size: 16px; margin: 0 0 8px; font-weight: 600; }
+.brand { display: flex; align-items: center; gap: 8px; font-weight: 650; } .brand::before { content: "T"; width: 22px; height: 22px; border-radius: 6px; background: var(--ink); color: var(--bg); display: grid; place-items: center; font-weight: 700; font-size: 13px; } .brand span { font-weight: 650; }
 .muted { color: var(--muted); } .small { font-size: 12px; }
-button, input { font: inherit; } input { width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); margin-top: 4px; }
-label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-top: 8px; }
-.btn { width: 100%; margin-top: 10px; padding: 10px; border-radius: 9px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-weight: 700; cursor: pointer; }
-.btn.primary { background: var(--brand); border-color: var(--brand); color: #fff; } .btn:disabled { opacity: .6; cursor: wait; }
-.btn.link { border: 0; background: none; color: var(--muted); font-weight: 600; margin-top: 4px; }
-.err { background: var(--bad-bg); color: var(--bad); padding: 8px 10px; border-radius: 8px; margin-top: 10px; }
-.note { background: var(--warn-bg); color: var(--warn); padding: 8px 10px; border-radius: 8px; margin-top: 10px; }
-.score { display: flex; gap: 12px; align-items: center; margin: 8px 0; }
-.ring { width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; flex: none; background: conic-gradient(var(--c) calc(var(--p) * 1%), var(--line) 0); }
-.ring i { width: 50px; height: 50px; border-radius: 50%; background: var(--bg); display: grid; place-items: center; font-style: normal; font-weight: 800; font-size: 18px; }
-.chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px; } .chip { padding: 2px 8px; border-radius: 99px; font-size: 12px; font-weight: 700; background: var(--bad-bg); color: var(--bad); } .chip.nice { background: var(--warn-bg); color: var(--warn); } .chip.ok { background: var(--good-bg); color: var(--good); }
+button, input { font: inherit; } input { width: 100%; padding: 9px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); color: var(--ink); margin-top: 4px; } input:focus { outline: none; border-color: var(--muted); box-shadow: 0 0 0 3px var(--line); }
+label { display: block; font-size: 12px; font-weight: 500; color: var(--muted); margin-top: 10px; }
+.btn { width: 100%; margin-top: 10px; padding: 10px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-weight: 550; cursor: pointer; } .btn:hover { background: var(--soft); }
+.btn.primary { background: var(--btn); border-color: var(--btn); color: var(--btn-ink); } .btn.primary:hover { opacity: .88; } .btn:disabled { opacity: .55; cursor: wait; }
+.btn.link { border: 0; background: none; color: var(--muted); font-weight: 500; margin-top: 4px; padding: 6px 8px; } .btn.link:hover { color: var(--ink); background: none; }
+.err { background: var(--bad-bg); color: var(--bad); padding: 9px 12px; border-radius: 12px; margin-top: 10px; }
+.note { background: var(--warn-bg); color: var(--warn); padding: 9px 12px; border-radius: 12px; margin-top: 10px; }
+.score { display: flex; gap: 14px; align-items: center; margin: 12px 0; }
+.ring { width: 62px; height: 62px; border-radius: 50%; display: grid; place-items: center; flex: none; background: conic-gradient(var(--c) calc(var(--p) * 1%), var(--line) 0); }
+.ring i { width: 48px; height: 48px; border-radius: 50%; background: var(--bg); display: grid; place-items: center; font-style: normal; font-weight: 650; font-size: 18px; }
+.chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px; } .chip { padding: 2px 10px; border-radius: 99px; font-size: 12px; font-weight: 500; background: var(--bad-bg); color: var(--bad); } .chip.nice { background: var(--warn-bg); color: var(--warn); } .chip.ok { background: var(--good-bg); color: var(--good); }
 .row { display: flex; justify-content: space-between; align-items: center; }
+.title { font-weight: 600; line-height: 1.3; }
