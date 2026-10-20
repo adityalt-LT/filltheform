@@ -1,0 +1,24 @@
+{
+  "name": "tailorkit",
+  "version": "1.0.0",
+  "description": "Tailor & Apply Kit: Chrome extension + dashboard that tailors a resume to each job description without changing its structure.",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "test": "node --no-warnings --test --test-reporter=spec test/*.test.js",
+    "e2e": "node --no-warnings test/e2e/run.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.135.0",
+    "express": "^5.3.0",
+    "mammoth": "^1.13.0",
+    "multer": "^2.4.0",
+    "pdf-parse": "^2.4.5",
+    "playwright-core": "^1.64.1"
+  },
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=22.13"
+  }
+}

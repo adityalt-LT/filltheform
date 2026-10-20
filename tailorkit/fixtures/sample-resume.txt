@@ -1,0 +1,34 @@
+RAHUL SHARMA
+Bengaluru, India | rahul.sharma@example.com | +91 98765 43210
+linkedin.com/in/rahulsharma-demo | github.com/rahul-demo
+
+SUMMARY
+Backend engineer with 4 years of experience building APIs and data pipelines for fintech products.
+
+EXPERIENCE
+Software Engineer — PayNest Technologies, Bengaluru    Jul 2022 – Present
+• Built payment reconciliation services in Python and Django handling 2 million transactions a day.
+• Reduced API latency by 38% by adding Redis caching and tuning PostgreSQL queries.
+• Wrote unit and integration tests, lifting coverage from 52% to 85%.
+• Mentored 3 junior engineers and ran weekly code reviews.
+
+Associate Software Engineer — CloudKart    Jun 2020 – Jun 2022
+• Developed REST APIs in Node.js and Express for an e-commerce platform serving 120,000 users.
+• Migrated 14 cron jobs to Airflow, cutting failed runs by 60%.
+• Containerised services with Docker and set up Jenkins pipelines.
+
+PROJECTS
+Expense Tracker API
+• Built a Flask REST API with JWT auth and PostgreSQL; deployed on AWS EC2.
+
+EDUCATION
+B.Tech in Computer Science — Visvesvaraya Technological University    2016 – 2020
+CGPA: 8.4/10
+
+SKILLS
+Languages: Python, JavaScript, SQL
+Frameworks: Django, Flask, Express
+Tools: Docker, Git, Jenkins, Airflow, Redis, PostgreSQL
+
+CERTIFICATIONS
+• AWS Certified Cloud Practitioner (2023)
