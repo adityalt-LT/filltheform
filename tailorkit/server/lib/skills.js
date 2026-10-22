@@ -178,7 +178,7 @@ const PATTERNS = SKILLS.map((s) => {
 
 // Skills that are too generic to treat as hard requirements on their own are
 // still matched, but a single-letter alias like "r" or "go" needs context.
-const AMBIGUOUS = new Set(['R', 'Go', 'Swift', 'Spring Boot', 'Express', 'Research', 'Sales']);
+const AMBIGUOUS = new Set(['R', 'Go', 'Swift', 'Spring Boot', 'Express', 'Research', 'Sales', 'Excel']);
 
 // Returns canonical skills in the order they first appear in the text.
 export function findSkills(text) {
@@ -208,6 +208,8 @@ function ambiguousHit(name, text) {
     case 'Express': return /\bexpress(\.js|js)\b|\bexpress\b.*\bnode\b|\bnode\b.*\bexpress\b/i.test(text);
     case 'Research': return /\b(user |market |ux )?research\b/i.test(text);
     case 'Sales': return /\bsales\b/i.test(text);
+    // "I excel at" is a verb. Excel the tool appears as MS/Advanced Excel, next to other tools, or in a list.
+    case 'Excel': return /\b(ms|microsoft|advanced)\s+excel\b|\bexcel\s*(,|\/|and|&)\s*(sql|tableau|power ?bi|word|powerpoint|jira|google sheets)\b|\b(sql|tableau|power ?bi|word|powerpoint|jira|google sheets)\s*(,|\/|and|&)\s*excel\b|\bexcel\s+(formulas?|spreadsheets?|sheets?|pivot|macros?|skills|dashboards?|models?)\b|\bvlookup\b|(^|[,;:(•·|\/]\s*)Excel(\s*[,;)\/•·|]|\s*$)/m.test(text);
     default: return false;
   }
 }

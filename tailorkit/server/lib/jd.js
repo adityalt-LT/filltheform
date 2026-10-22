@@ -97,7 +97,7 @@ function guessCompany(body, lines = []) {
 // ---- Page scraping can pick up the wrong element (a card in a job list, site chrome, a stale heading).
 // A title is only trusted if it is actually about the text we captured.
 const JUNK_PREFIX = /^(selected|viewed|saved|new|promoted|verified|actively recruiting|easy apply)[,:]\s*/i;
-const SITE_CHROME = /^(linkedin|jobs?|job search|home|feed|search|notifications|messaging|naukri(\.com)?|indeed|glassdoor|careers?|apply|menu|\(\d+\).*)$/i;
+const SITE_CHROME = /^(linkedin|jobs?|job search|home|feed|search|notifications|messaging|naukri(\.com)?|indeed|glassdoor|careers?|apply|menu|about the job|about us|about the role|job description|description|overview|requirements?|responsibilit\w*|qualifications?|skills?|\(\d+\).*)$/i;
 export const cleanTitle = (t) => String(t || '').replace(/\s+/g, ' ').replace(JUNK_PREFIX, '').trim().slice(0, 120);
 const wordSet = (t) => new Set(String(t).toLowerCase().replace(/[^a-z0-9+#]+/g, ' ').split(/\s+/).filter(Boolean));
 
@@ -112,6 +112,27 @@ export function titleOnPage(title, text) {
 export function pickTitle(candidates, text) {
   const ok = [...new Set((candidates || []).map(cleanTitle).filter((c) => c.length >= 3))].filter((c) => titleOnPage(c, text));
   return ok.find((c) => ROLE_WORD.test(c)) || ok[0] || '';
+}
+
+// ---- Company: several weak signals from the page; the server keeps the best one that makes sense.
+const JOB_BOARDS = /\b(linkedin|naukri|indeed|glassdoor|foundit|monster|instahyre|wellfound|angellist|cutshort|shine|timesjobs|apna|internshala|greenhouse|lever|workday|myworkdayjobs|ashby|workable|smartrecruiters|jobvite|icims|taleo)\b/i;
+const SOURCE_WEIGHT = { link: 5, meta: 3, title: 2, url: 1 };
+const cleanCompany = (n) => String(n || '').replace(/\s+/g, ' ').replace(/^(careers?|jobs?|work)\s+(at|with|@)\s+/i, '').replace(/^join\s+/i, '').replace(/\s+[-–|]\s*(careers?|jobs?|hiring)$/i, '').replace(/\s+(careers?|jobs?)$/i, '').replace(/\s*\|\s*linkedin$/i, '').trim();
+
+export function pickCompany(candidates, { title = '', text = '', allowUnverified = false } = {}) {
+  const t = String(title).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  const low = String(text).toLowerCase();
+  const scored = (Array.isArray(candidates) ? candidates : []).slice(0, 12).map((c, i) => ({ name: cleanCompany(c?.name), w: SOURCE_WEIGHT[c?.source] || 0, i, source: c?.source }))
+    .filter((c) => c.name.length >= 2 && c.name.length <= 60
+      && c.name.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim() !== t
+      && !SITE_CHROME.test(c.name) && !JOB_BOARDS.test(c.name) && !/^(easy apply|apply|save|follow|promoted|new|\d+ .*)$/i.test(c.name)
+      && !(c.source !== 'link' && ROLE_WORD.test(c.name) && c.name.split(/\s+/).length >= 2));
+  for (const c of scored) { c.inText = low.includes(c.name.toLowerCase()); c.s = c.w + (c.inText ? 2 : 0); }
+  // A company-page link in the same panel is trusted. Site names, page titles and URL slugs only count when the text
+  // backs them up, unless nothing better exists (allowUnverified).
+  const pool = scored.filter((c) => c.source === 'link' || c.inText || allowUnverified);
+  pool.sort((a, b) => b.s - a.s || a.i - b.i);
+  return pool[0]?.name || '';
 }
 
 export async function extractJob(text, hints = {}) {

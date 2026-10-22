@@ -4,9 +4,9 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { openDb } from './db.js';
 import { hashPassword, verifyPassword, createSession, userFromToken, destroySession, rateLimiter } from './auth.js';
-import { extractText, parseResumeText, parseWarnings, resumePlainText } from './lib/resume-parse.js';
+import { parseResumeFile, parseWarnings } from './lib/resume-parse.js';
 import { sanitizeResume, httpError } from './lib/model.js';
-import { extractJob, pickTitle, cleanTitle } from './lib/jd.js';
+import { extractJob, pickTitle, cleanTitle, pickCompany } from './lib/jd.js';
 import { scoreMatch, estimateYears } from './lib/match.js';
 import { tailorResume, suggestRewrites } from './lib/tailor.js';
 import { renderHtml, renderPdf } from './lib/render.js';
@@ -155,11 +155,12 @@ export function createApp({ dbPath = process.env.DB_PATH || 'data/tailorkit.db',
   // ---------- profile
   app.post('/api/profile/resume', auth, upload.single('file'), async (req, res) => {
     if (!req.file) throw httpError(400, 'Choose a resume file (PDF, DOCX or TXT).');
-    let extracted;
-    try { extracted = await extractText(req.file.buffer, req.file.originalname); }
-    catch (e) { throw e.status ? e : httpError(422, 'We could not read that file. Try a different PDF/DOCX, or paste it as .txt.'); }
-    if (extracted.text.replace(/\s/g, '').length < 80) throw httpError(422, 'That file has almost no readable text (is it a scanned image?). Upload a text-based PDF or a DOCX.');
-    const resume = parseResumeText(extracted.text);
+    let parsed;
+    try { parsed = await parseResumeFile(req.file.buffer, req.file.originalname); }
+    catch (e) { console.warn('[resume]', e.message); throw e.status ? e : httpError(422, 'We could not read that file. Try a different PDF/DOCX, or paste it as .txt.'); }
+    if (parsed.text.replace(/\s/g, '').length < 80) throw httpError(422, 'That file has almost no readable text (is it a scanned image?). Upload a text-based PDF or a DOCX.');
+    const resume = parsed.resume;
+    const extracted = { text: parsed.text, format: parsed.format };
     const prev = getProfile(req.user.id);
     db.prepare(`INSERT INTO profiles (user_id, resume, original_text, source_format, facts, confirmed_skills) VALUES (?,?,?,?,?,?)
       ON CONFLICT(user_id) DO UPDATE SET resume = excluded.resume, original_text = excluded.original_text, source_format = excluded.source_format, updated_at = datetime('now')`)
@@ -206,10 +207,13 @@ export function createApp({ dbPath = process.env.DB_PATH || 'data/tailorkit.db',
     const title = trusted ? clean(hin.title) : pickTitle([hin.title, ...(Array.isArray(hin.titleCandidates) ? hin.titleCandidates.slice(0, 12) : [])], text);
     const lowText = text.toLowerCase();
     const mentioned = (v) => !!clean(v) && lowText.includes(clean(v).toLowerCase());
+    const finalTitle = cleanTitle(title);
+    const company = (hin.companyTrusted === true && clean(hin.company)) || pickCompany(hin.companyCandidates, { title: finalTitle, text }) || (trusted || title || mentioned(hin.company) ? clean(hin.company) : '');
+    const weakCompany = () => pickCompany(hin.companyCandidates, { title: finalTitle, text, allowUnverified: true });
     const believe = (v) => (trusted || title || mentioned(v)) ? clean(v) : '';
-    const hints = { title: cleanTitle(title), company: believe(hin.company), location: believe(hin.location) };
-
+    const hints = { title: finalTitle, company, location: believe(hin.location) };
     const reqs = await extractJob(text, hints);
+    if (!reqs.company) reqs.company = weakCompany(); // last resort: site name / page title / URL slug
     const match = rescore(profile, reqs);
     const externalId = String(req.body?.externalId || '').slice(0, 80);
     let host = ''; try { host = new URL(url).host.toLowerCase(); } catch { /* not a URL */ }

@@ -6,6 +6,7 @@
 
 import { randomUUID } from 'node:crypto';
 import { findSkills } from './skills.js';
+import { stripMd } from './resume-parse.js';
 import { askJSON, fence, DATA_ONLY_RULE } from './ai.js';
 
 const clone = (x) => JSON.parse(JSON.stringify(x));
@@ -16,6 +17,7 @@ export function jobKeywords(job) {
 }
 
 function relevance(text, keywords) {
+  text = stripMd(text);
   if (!text) return 0;
   const skills = new Set(findSkills(text));
   const lower = text.toLowerCase();
@@ -26,6 +28,28 @@ function relevance(text, keywords) {
 
 const stableSortDesc = (arr, score) => arr.map((v, i) => ({ v, i, s: score(v) })).sort((a, b) => b.s - a.s || a.i - b.i).map((x) => x.v);
 
+// Reorders an entry's lines by relevance without breaking its structure:
+//  - plain bullets are sorted individually;
+//  - numbered projects ("1. X" + its Major Focus / How / Impact lines) move as one group and are renumbered.
+function reorderEntry(item, keywords) {
+  const bs = item.bullets || [];
+  if (bs.some((b) => b.style === 'sub')) {
+    const groups = [];
+    for (const b of bs) { if (b.style === 'sub' || !groups.length) groups.push([b]); else groups.at(-1).push(b); }
+    const ordered = stableSortDesc(groups, (g) => g.reduce((a, b) => a + relevance(b.text, keywords), 0));
+    if (ordered.some((g, i) => g !== groups[i])) {
+      let n = 0;
+      for (const g of ordered) if (g[0].style === 'sub' && /^\d+[.)]\s/.test(g[0].text)) { n += 1; g[0].text = g[0].text.replace(/^\d+/, String(n)); }
+      item.bullets = ordered.flat();
+      return true;
+    }
+    return false;
+  }
+  const before = bs.map((b) => b.id).join();
+  item.bullets = stableSortDesc(bs, (b) => (b.style === 'bullet' ? relevance(b.text, keywords) : 0));
+  return before !== item.bullets.map((b) => b.id).join();
+}
+
 export function tailorResume(resume, job, { confirmedSkills = [] } = {}) {
   const out = clone(resume);
   const keywords = jobKeywords(job);
@@ -34,16 +58,16 @@ export function tailorResume(resume, job, { confirmedSkills = [] } = {}) {
   for (const section of out.sections) {
     if (section.kind === 'skills') {
       for (const row of section.items) {
+        if (!row.skills?.length) continue;
         const before = row.skills.join('|');
         row.skills = stableSortDesc(row.skills, (s) => relevance(s, keywords));
         if (before !== row.skills.join('|')) changes.push(`Moved job-relevant skills to the front of "${row.label || section.heading}".`);
       }
       addConfirmed(section, confirmedSkills, keywords, changes);
-    } else if (section.kind === 'experience' || section.kind === 'projects') {
+    } else if (section.kind === 'experience' || section.kind === 'projects' || section.kind === 'education' || section.kind === 'list') {
       for (const item of section.items) {
-        const before = item.bullets.map((b) => b.id).join();
-        item.bullets = stableSortDesc(item.bullets, (b) => relevance(b.text, keywords));
-        if (before !== item.bullets.map((b) => b.id).join()) changes.push(`Reordered bullets under "${item.title || section.heading}" by relevance.`);
+        if (section.kind === 'education' || section.kind === 'list') continue; // keep these exactly as written
+        if (reorderEntry(item, keywords)) changes.push(`Reordered ${item.bullets.some((b) => b.style === 'sub') ? 'projects' : 'bullets'} under "${item.title || section.heading}" by relevance.`);
       }
       if (section.kind === 'projects') {
         const before = section.items.map((i) => i.id).join();
@@ -56,12 +80,19 @@ export function tailorResume(resume, job, { confirmedSkills = [] } = {}) {
 }
 
 function addConfirmed(section, confirmedSkills, keywords, changes) {
-  const present = new Set(section.items.flatMap((r) => r.skills.map((s) => s.toLowerCase())));
-  const toAdd = confirmedSkills.filter((s) => keywords.includes(s) && !present.has(s.toLowerCase()));
+  const present = new Set(section.items.flatMap((r) => (r.skills || []).map((x) => x.toLowerCase())));
+  const text = section.items.map((r) => stripMd(r.text || '')).join(' ').toLowerCase();
+  const toAdd = confirmedSkills.filter((s) => keywords.includes(s) && !present.has(s.toLowerCase()) && !text.includes(s.toLowerCase()));
   if (!toAdd.length) return;
-  const target = section.items.find((r) => /other|tool|additional|more/i.test(r.label)) || section.items[section.items.length - 1];
-  if (target) target.skills.push(...toAdd);
-  else section.items.push({ id: id(), label: '', skills: [...toAdd] });
+  const lists = section.items.filter((r) => r.skills?.length);
+  if (lists.length) {
+    const target = lists.find((r) => /other|tool|additional|more/i.test(r.label)) || lists[lists.length - 1];
+    target.skills.push(...toAdd);
+  } else {
+    // A skills section written as sentences: add one line in the same style instead of inventing a list.
+    const like = section.items.find((r) => r.text) || {};
+    section.items.push({ id: id(), text: `**Additional skills:** ${toAdd.join(', ')}`, style: like.style || 'bullet', indent: like.indent || 0 });
+  }
   changes.push(`Added skills you confirmed you have: ${toAdd.join(', ')}.`);
 }
 
@@ -72,7 +103,7 @@ export async function suggestRewrites(resume, job, limit = 6) {
   const keywords = jobKeywords(job);
   for (const s of resume.sections) {
     if (s.kind !== 'experience' && s.kind !== 'projects') continue;
-    for (const it of s.items) for (const b of it.bullets) bullets.push({ itemId: it.id, bulletId: b.id, text: b.text, rel: relevance(b.text, keywords) });
+    for (const it of s.items) for (const b of it.bullets) if (b.style !== 'sub') bullets.push({ itemId: it.id, bulletId: b.id, text: stripMd(b.text), rel: relevance(b.text, keywords) });
   }
   const top = bullets.sort((a, b) => b.rel - a.rel).slice(0, limit);
   if (!top.length) return [];

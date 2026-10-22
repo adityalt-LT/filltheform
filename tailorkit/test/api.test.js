@@ -186,6 +186,20 @@ test('title hints are verified against the captured text: a card from a job list
   assert.equal(r3.data.job.title, 'Head of Product');
 });
 
+test('company: the best verified candidate wins; a list card, the job title, a job board or a generic word never does', async () => {
+  const { pickCompany } = await import('../server/lib/jd.js');
+  const text = 'About the job. We build audio stories at scale.';
+  assert.equal(pickCompany([{ name: 'Kuku', source: 'link' }, { name: 'Product Manager II | Kuku', source: 'title' }, { name: 'LinkedIn', source: 'meta' }], { title: 'Product Manager II', text }), 'Kuku');
+  const weak = [{ name: 'LinkedIn', source: 'meta' }, { name: 'Jobs', source: 'title' }, { name: 'Product Manager II', source: 'title' }, { name: 'Nike', source: 'url' }];
+  assert.equal(pickCompany(weak, { title: 'Product Manager II', text }), '', 'a URL slug the text does not back up is not trusted outright');
+  assert.equal(pickCompany(weak, { title: 'Product Manager II', text, allowUnverified: true }), 'Nike', 'but is used as a last resort');
+  assert.equal(pickCompany([{ name: 'SomeBoard', source: 'title' }, { name: 'Nike', source: 'url' }], { title: 'x', text: 'We are Nike, and we are hiring.' }), 'Nike', 'a company named in the text beats a site name');
+  assert.equal(pickCompany([{ name: 'Careers at Acme Corp', source: 'title' }], { title: 'x', text, allowUnverified: true }), 'Acme Corp');
+  assert.equal(pickCompany([{ name: 'Easy Apply', source: 'link' }, { name: 'greenhouse', source: 'url' }], { title: 'x', text, allowUnverified: true }), '');
+  const r = await api('/api/capture', { method: 'POST', body: { text: 'Designer\nWe are hiring a designer to work on Figma prototypes and UX research with product and engineering every day.', url: 'https://boards.example.com/orbit-labs/jobs/77', externalId: '77', hints: { companyCandidates: [{ name: 'Orbit Labs', source: 'url' }, { name: 'LinkedIn', source: 'meta' }] } } });
+  assert.equal(r.data.job.company, 'Orbit Labs');
+});
+
 test('users cannot read each other\'s data', async () => {
   const other = await api('/api/auth/signup', { method: 'POST', body: { email: 'other@example.com', password: 'another pass' } });
   const mine = token; token = other.data.token;

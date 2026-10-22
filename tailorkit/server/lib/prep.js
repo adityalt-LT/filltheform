@@ -4,7 +4,7 @@
 // strategy, never an invented number.
 
 import { findSkills, canonicalSkill } from './skills.js';
-import { resumePlainText } from './resume-parse.js';
+import { resumePlainText, stripMd } from './resume-parse.js';
 import { askJSON, aiEnabled, aiLastError, fence, DATA_ONLY_RULE } from './ai.js';
 
 const lowerFirst = (s) => s.charAt(0).toLowerCase() + s.slice(1);
@@ -13,17 +13,18 @@ const METRIC = /\d[\d,.]*\s?(%|x|k|lakh|crore|cr|million|users|customers|clients
 
 function evidenceFor(skill, resume) {
   const out = [];
-  for (const s of resume.sections) for (const it of s.items) for (const b of it.bullets || []) {
+  for (const s of resume.sections) for (const it of s.items) for (const b of [...(it.bullets || []), ...(it.text && !it.bullets ? [{ text: it.text }] : [])]) {
     // Dictionary skills match by alias only ("SQL" must not match "PostgreSQL"); other phrases by text.
-    const hit = canonicalSkill(skill) ? findSkills(b.text).includes(skill) : b.text.toLowerCase().includes(skill.toLowerCase());
-    if (hit) out.push({ text: b.text, where: it.title || s.heading });
+    const plain = stripMd(b.text);
+    const hit = canonicalSkill(skill) ? findSkills(plain).includes(skill) : plain.toLowerCase().includes(skill.toLowerCase());
+    if (hit) out.push({ text: plain, where: it.title || s.heading });
   }
   return out.slice(0, 3);
 }
 
 function metricBullets(resume) {
   const out = [];
-  for (const s of resume.sections) if (s.kind === 'experience' || s.kind === 'projects') for (const it of s.items) for (const b of it.bullets) if (METRIC.test(b.text)) out.push({ text: b.text, where: it.title || s.heading });
+  for (const s of resume.sections) if (s.kind === 'experience' || s.kind === 'projects') for (const it of s.items) for (const b of it.bullets) if (b.style !== 'sub' && METRIC.test(stripMd(b.text))) out.push({ text: stripMd(b.text), where: it.title || s.heading });
   return out;
 }
 

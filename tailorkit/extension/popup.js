@@ -75,19 +75,55 @@ function extractPage() {
   out.externalId = q2.get('currentJobId') || q2.get('jobId') || q2.get('job_id') || q2.get('gh_jid') || q2.get('jid') || q2.get('reqId')
     || (location.pathname.match(/\/jobs\/view\/(?:[^/]*-)?(\d{6,})/) || [])[1] || (location.pathname.match(/-(\d{6,})\/?$/) || [])[1] || '';
 
-  if (/linkedin\.com$/.test(host)) {
-    if (/\/jobs\//.test(location.pathname)) out.title = out.title || text1(['.job-details-jobs-unified-top-card__job-title h1', '.jobs-unified-top-card__job-title', 'h1']);
-    out.company = out.company || text1(['.job-details-jobs-unified-top-card__company-name', '.jobs-unified-top-card__company-name']);
-    const body = q(['.jobs-description__content', '.jobs-box__html-content', '#job-details', '.feed-shared-update-v2__description', '.update-components-text', 'main']);
-    out.text = body ? clean(body.innerText) : '';
-  } else if (/naukri\.com$/.test(host)) {
-    out.title = out.title || text1(['h1']);
-    const body = q(['.styles_job-desc-container__txpYf', '[class*="job-desc"]', '[class*="JDC"]', 'main']);
-    out.text = body ? clean(body.innerText) : '';
+  // The job description container (class names used by LinkedIn, Naukri and common job pages). Used on any site.
+  const DESC = ['.jobs-description__content', '.jobs-box__html-content', '#job-details', '.feed-shared-update-v2__description', '.update-components-text', '.styles_job-desc-container__txpYf', '[class*="job-desc"]', '[class*="JDC"]', '[class*="job-description"]', '[class*="jobDescription"]', '[id*="job-description"]', '[id*="jobDescription"]'];
+  const descNode = q(DESC);
+  if (/linkedin\.com$/.test(host) && /\/jobs\//.test(location.pathname)) out.title = out.title || text1(['.job-details-jobs-unified-top-card__job-title h1', '.jobs-unified-top-card__job-title', 'h1']);
+  if (/naukri\.com$/.test(host)) out.title = out.title || text1(['h1']);
+  if (descNode && clean(descNode.innerText).length >= 150) out.text = clean(descNode.innerText);
+
+  // Company candidates (the server verifies and picks): the company link in the SAME panel as the description,
+  // page metadata, the page title and the site address. A card elsewhere in a job list is never used.
+  const cc = [];
+  const addCo = (name, source) => { const n = clean(String(name || '')).split('\n')[0].trim(); if (n && n.length <= 80) cc.push({ name: n, source }); };
+  if (ld && ld.hiringOrganization && ld.hiringOrganization.name) { out.companyTrusted = true; out.company = String(ld.hiringOrganization.name); }
+  // Walk up from the description to the panel that also holds its heading / company link. Both belong to THIS job.
+  let paneTitle = '';
+  if (descNode) {
+    let a = descNode;
+    for (let i = 0; i < 8 && a && a !== document.body; i++) {
+      a = a.parentElement;
+      if (!a) break;
+      const links = [...a.querySelectorAll('a[href*="/company/"], a[href*="/companies/"]')];
+      const hd = a.querySelector('h1, [class*="top-card__job-title"], [class*="job-title"], [class*="jobTitle"]');
+      const hdText = hd ? clean(hd.innerText).split('\n')[0] : '';
+      if (links.length || hdText.length >= 3) {
+        for (const l of links.slice(0, 4)) addCo(l.innerText || l.getAttribute('aria-label') || (l.querySelector('img') && l.querySelector('img').alt), 'link');
+        paneTitle = hdText;
+        break;
+      }
+    }
   }
+  for (const sel of ['meta[property="og:site_name"]', 'meta[name="author"]', 'meta[name="application-name"]']) { const m = document.querySelector(sel); if (m) addCo(m.content, 'meta'); }
+  for (const part of clean(document.title).split(/\s+[|\u2013\u2014-]\s+/)) addCo(part, 'title');
+  try {
+    const u = new URL(location.href); const hh = u.hostname.replace(/^www\./, ''); const segs = u.pathname.split('/').filter(Boolean);
+    let slug = '';
+    const wd = hh.match(/^([a-z0-9-]+)\.(?:wd\d+\.)?myworkdayjobs\.com$/);
+    if (/(^|\.)(greenhouse\.io|lever\.co|ashbyhq\.com|workable\.com|smartrecruiters\.com|jobvite\.com|recruitee\.com|breezy\.hr)$/.test(hh)) slug = segs[0] || '';
+    else if (wd) slug = wd[1];
+    else if (!/(linkedin|naukri|indeed|glassdoor|foundit|monster|instahyre|wellfound|cutshort|shine|timesjobs|apna|internshala|google|localhost)\./.test(hh + '.') && hh.includes('.') && !/^[\d.]+$/.test(hh)) { const lab = hh.split('.'); slug = lab[lab.length - (/^(co|com|org|net)$/.test(lab[lab.length - 2]) ? 3 : 2)] || ''; }
+    if (slug) addCo(slug.replace(/[-_]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()), 'url');
+  } catch { /* ignore */ }
+  out.companyCandidates = cc.slice(0, 10);
+
   if (!out.text) {
     const body = q(['main', '[role="main"]', 'article']);
     out.text = clean((body || document.body).innerText);
+  } else if (descNode) {
+    // A description rarely repeats the job title or company; add what the panel says so they travel with the text.
+    const head = [paneTitle, cc.find((c) => c.source === 'link')?.name].filter(Boolean).join('\n');
+    if (head && !out.text.startsWith(head)) out.text = `${head}\n\n${out.text}`;
   }
   if (out.jsonld && out.jsonld.length > 200) out.text = `${out.title}\n${out.company}\n${out.location}\n\n${out.jsonld}`;
   if (sel && sel.trim().length >= 80) { out.text = clean(sel); out.selection = true; }
@@ -99,6 +135,7 @@ function extractPage() {
   for (const el of [...document.querySelectorAll('h1')].slice(0, 6)) cands.push(clean(el.innerText).split('\n')[0]);
   const og = document.querySelector('meta[property="og:title"]'); if (og) cands.push(og.content);
   for (const part of clean(document.title).split(/\s+[|\u2013\u2014-]\s+/)) cands.push(part);
+  if (paneTitle) cands.unshift(paneTitle);
   out.titleCandidates = [...new Set(cands.map((c) => String(c || '').trim()).filter((c) => c.length >= 3 && c.length <= 120))].slice(0, 12);
   out.title = out.titleTrusted ? out.title : '';
   out.text = out.text.slice(0, 40000);
@@ -114,7 +151,7 @@ async function capture(btn) {
     const [{ result: page }] = await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: extractPage });
     if (!page || page.text.length < 80) throw new Error('Not enough text found. Select the job description on the page and try again.');
     btn.textContent = 'Matching to your resume…';
-    const res = await callApi('/api/capture', { method: 'POST', body: { url: page.url, externalId: page.externalId, source: page.source, text: page.text, hints: { title: page.title, titleTrusted: page.titleTrusted && !page.selection, titleCandidates: page.titleCandidates, company: page.company, location: page.location } } });
+    const res = await callApi('/api/capture', { method: 'POST', body: { url: page.url, externalId: page.externalId, source: page.source, text: page.text, hints: { title: page.title, titleTrusted: page.titleTrusted && !page.selection, titleCandidates: page.titleCandidates, company: page.company, companyTrusted: !!page.companyTrusted, companyCandidates: page.companyCandidates, location: page.location } } });
     await showResult(res);
   } catch (e) {
     if (e.status === 401) return loginScreen('Please sign in again.');

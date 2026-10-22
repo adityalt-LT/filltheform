@@ -20,16 +20,27 @@ function has(req, profile) {
   return n.length > 2 && profile.text.includes(n);
 }
 
+const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+// "Jul 2022", "Feb '26", "2020", "05/2021" -> Date (first of the month)
+export function parseDateToken(tok) {
+  const t = String(tok).trim().toLowerCase().replace(/\./g, '');
+  let m = t.match(/^([a-z]{3,9})\s*,?\s*['’]?(\d{2}|\d{4})$/);
+  if (m) { const mi = MONTHS.indexOf(m[1].slice(0, 3)); if (mi >= 0) return new Date(m[2].length === 2 ? 2000 + Number(m[2]) : Number(m[2]), mi, 1); }
+  m = t.match(/^(\d{1,2})\/(\d{4})$/); if (m) return new Date(Number(m[2]), Number(m[1]) - 1, 1);
+  m = t.match(/^(\d{4})$/); if (m) return new Date(Number(m[1]), 0, 1);
+  return null;
+}
+
 export function estimateYears(resume) {
   const now = new Date();
   const spans = [];
   for (const s of resume.sections) {
     if (s.kind !== 'experience') continue;
     for (const it of s.items) {
-      const m = String(it.date || '').match(/((?:[a-z]{3,9}\.?\s*)?\d{4})\s*(?:-|–|—|to|until)\s*((?:[a-z]{3,9}\.?\s*)?\d{4}|present|current|now|till date|ongoing)/i);
+      const m = String(it.date || '').match(/^(.+?)\s*(?:-|–|—|to|until)\s*(.+)$/i);
       if (!m) continue;
-      const a = toDate(m[1]);
-      const b = /\d{4}/.test(m[2]) ? toDate(m[2]) : now;
+      const a = parseDateToken(m[1]);
+      const b = /present|current|now|till date|ongoing/i.test(m[2]) ? now : parseDateToken(m[2]);
       if (a && b && b >= a) spans.push([a.getTime(), b.getTime()]);
     }
   }
@@ -39,13 +50,6 @@ export function estimateYears(resume) {
   for (const [s, e] of spans.slice(1)) { if (s <= ce) ce = Math.max(ce, e); else { total += ce - cs; cs = s; ce = e; } }
   total += ce - cs;
   return Math.round((total / (365.25 * 24 * 3600 * 1000)) * 10) / 10;
-}
-
-function toDate(s) {
-  const d = new Date(String(s).replace(/\./g, '') + ' 1');
-  if (!Number.isNaN(d.getTime())) return d;
-  const y = String(s).match(/\d{4}/);
-  return y ? new Date(Number(y[0]), 0, 1) : null;
 }
 
 function titleTokens(s) {

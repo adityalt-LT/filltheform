@@ -129,6 +129,13 @@ try {
     await jobTab.close(); await pop.close();
   });
 
+  await step('company and title come from the panel that holds the description (company link), not from other cards in the list', async () => {
+    const { pop, jobTab } = await capture('panel.html');
+    const text = await pop.locator('.wrap').innerText();
+    assert.match(text, /Product Manager II/); assert.match(text, /Kuku/); assert.doesNotMatch(text, /Nykaa|Selected|Company not detected/);
+    await jobTab.close(); await pop.close();
+  });
+
   await step('job page: Kubernetes is the only must-have gap; confirming it updates the score', async () => {
     await dash.goto(`${DASH}/#/tracking`); await dash.waitForSelector('.board');
     await dash.click('.jcard:has-text("Senior Backend")'); await dash.waitForSelector('.ring');
@@ -150,13 +157,13 @@ try {
     await dash.click('text=Edit & preview'); await dash.waitForSelector('.editor iframe'); await dash.waitForTimeout(900);
     await shot(dash, '10-editor', true);
     const frame = dash.frameLocator('.editor iframe');
-    const skills = await frame.locator('p.skills').allInnerTexts();
+    const skills = await frame.locator('.tx').allInnerTexts();
     assert.ok(skills.join(' ').includes('Kubernetes'), 'confirmed skill is on the tailored resume');
-    const n = await frame.locator('li').count();
+    const n = await frame.locator('.li').count();
     await dash.click('button[aria-label="Remove bullet"] >> nth=0'); await dash.waitForTimeout(900);
-    assert.equal(await frame.locator('li').count(), n - 1);
+    assert.equal(await frame.locator('.li').count(), n - 1);
     await dash.click('text=↶ Undo'); await dash.waitForTimeout(900);
-    assert.equal(await frame.locator('li').count(), n);
+    assert.equal(await frame.locator('.li').count(), n);
     const [d] = await Promise.all([dash.waitForEvent('download'), dash.click('text=Download PDF')]);
     assert.match(d.suggestedFilename(), /\.pdf$/);
   });
