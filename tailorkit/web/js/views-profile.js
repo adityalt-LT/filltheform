@@ -2,6 +2,7 @@ import { h, toast, clear, append, spinner } from './dom.js';
 import { api, apiText } from './api.js';
 import { icon } from './icons.js';
 import { resumeEditor } from './editor.js';
+import { pageHead, stepper } from './ui.js';
 
 export const EXT_STEPS = () => h('ol', { class: 'steps' },
   h('li', null, h('div', null, 'Open ', h('code', null, 'chrome://extensions'), ' and switch on ', h('strong', null, 'Developer mode'), '.')),
@@ -25,7 +26,7 @@ const initials = (n) => String(n || '?').split(/\s+/).filter(Boolean).slice(0, 2
 function profileSummary(d) {
   const row = (k, v) => v ? [h('dt', null, k), h('dd', null, v)] : null;
   return h('div', { class: 'card profile-card' },
-    h('div', { class: 'row', style: 'gap:16px;flex-wrap:nowrap' }, h('div', { class: 'avatar' }, initials(d.name)),
+    h('div', { class: 'row', style: 'gap:16px;flex-wrap:nowrap' }, h('div', { class: 'avatar lg' }, initials(d.name)),
       h('div', { class: 'grow' }, h('h2', { style: 'margin:0' }, d.name || 'Your name'), h('div', { class: 'muted' }, d.headline || ''))),
     h('dl', { class: 'kv' },
       row('Experience', d.yearsExperience ? `About ${d.yearsExperience} years` : null), row('Location', d.location), row('Email', d.email), row('Phone', d.phone),
@@ -48,11 +49,12 @@ export async function welcomeView(me, go) {
   const show = (...kids) => { clear(host); append(host, ...kids); };
 
   const showUpload = () => show(
+    stepper(0),
     h('h1', null, 'Let’s start with your resume'),
     h('p', { class: 'sub' }, 'That’s all we need. We’ll build your profile from it, so there’s nothing to fill in.'),
     dropzone(async (file) => {
       const lines = steps.map((t) => h('div', { class: 'stepline' }, h('span', { class: 'spin' }), t));
-      show(h('h1', null, 'Reading your resume…'), h('div', { class: 'progress' }, lines));
+      show(stepper(0), h('h1', null, 'Reading your resume…'), h('div', { class: 'progress' }, lines));
       try {
         const r = await upload(file);
         for (const l of lines) { l.classList.add('done'); l.replaceChild(icon('check'), l.firstChild); await new Promise((res) => setTimeout(res, 180)); }
@@ -61,6 +63,7 @@ export async function welcomeView(me, go) {
     }));
 
   const showReview = (r) => show(
+    stepper(1),
     h('h1', null, 'Here’s what we found'),
     h('p', { class: 'sub' }, 'Does this look right? You can fix anything later in your profile.'),
     r.warnings.length > 0 && h('div', { class: 'notice', style: 'text-align:left;margin-bottom:14px' }, r.warnings.join(' ')),
@@ -95,8 +98,7 @@ export async function profileView(me, go) {
     catch (e) { toast(e.message, true); location.reload(); }
   });
   append(host,
-    h('div', { class: 'row between' }, h('div', null, h('h1', null, 'Profile'), h('p', { class: 'muted' }, 'Built from your resume. It’s the source for every tailored version.')),
-      h('button', { class: 'btn primary', onclick: () => go('#/profile/resume') }, 'Edit master resume')),
+    pageHead('Profile', 'Built from your resume. It’s the source for every tailored version.', h('button', { class: 'btn primary', onclick: () => go('#/profile/resume') }, 'Edit master resume')),
     profile.warnings.length > 0 && h('div', { class: 'notice' }, profile.warnings.join(' ')),
     profileSummary(profile.derived),
     h('div', { class: 'card' }, h('h2', null, 'Skills you’ve confirmed'), chips, h('div', { style: 'margin-top:12px' }, h('button', { class: 'btn sm', onclick: save }, 'Save changes'))),
@@ -114,5 +116,5 @@ export async function masterEditorView(go) {
   if (!profile) { go('#/welcome'); return h('div'); }
   const me = await api('/api/me');
   const ed = resumeEditor({ resume: profile.resume, aiEnabled: me.aiEnabled, title: 'Master resume', onSave: async (resume) => { await api('/api/profile', { method: 'PUT', body: { resume } }); } });
-  return h('div', { class: 'stack' }, h('div', null, h('h1', null, 'Edit master resume'), h('p', { class: 'muted' }, 'Changes apply to resumes tailored from now on.')), ed.el);
+  return h('div', null, pageHead('Edit master resume', 'Changes apply to resumes tailored from now on.'), ed.el);
 }

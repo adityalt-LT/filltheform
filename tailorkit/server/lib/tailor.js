@@ -45,8 +45,9 @@ function reorderEntry(item, keywords) {
     }
     return false;
   }
+  if (!bs.every((b) => b.style === 'bullet')) return false; // mixed lines belong together; leave them as written
   const before = bs.map((b) => b.id).join();
-  item.bullets = stableSortDesc(bs, (b) => (b.style === 'bullet' ? relevance(b.text, keywords) : 0));
+  item.bullets = stableSortDesc(bs, (b) => relevance(b.text, keywords));
   return before !== item.bullets.map((b) => b.id).join();
 }
 

@@ -55,6 +55,8 @@ test('resume upload keeps the original structure', async () => {
   assert.equal(r.status, 201);
   assert.deepEqual(r.data.resume.sections.map((s) => s.heading), ['SUMMARY', 'EXPERIENCE', 'PROJECTS', 'EDUCATION', 'SKILLS', 'CERTIFICATIONS']);
   assert.equal(r.data.resume.structure.headingCase, 'upper');
+  const proj = r.data.resume.sections.find((x) => x.kind === 'projects').items;
+  assert.deepEqual([proj.length, proj[0].title, proj[0].bullets.length], [1, 'Expense Tracker API', 1], 'a plain project title is an entry title, not a bullet');
   assert.deepEqual(r.data.warnings, []);
   assert.equal((await api('/api/profile/resume', { method: 'POST', body: uploadForm(Buffer.from('x'), 'a.exe') })).status, 415);
 });
@@ -194,6 +196,7 @@ test('company: the best verified candidate wins; a list card, the job title, a j
   assert.equal(pickCompany(weak, { title: 'Product Manager II', text }), '', 'a URL slug the text does not back up is not trusted outright');
   assert.equal(pickCompany(weak, { title: 'Product Manager II', text, allowUnverified: true }), 'Nike', 'but is used as a last resort');
   assert.equal(pickCompany([{ name: 'SomeBoard', source: 'title' }, { name: 'Nike', source: 'url' }], { title: 'x', text: 'We are Nike, and we are hiring.' }), 'Nike', 'a company named in the text beats a site name');
+  assert.equal(pickCompany([{ name: 'Kuku logo', source: 'link' }], { title: 'x', text }), 'Kuku', 'alt text of a logo image is cleaned');
   assert.equal(pickCompany([{ name: 'Careers at Acme Corp', source: 'title' }], { title: 'x', text, allowUnverified: true }), 'Acme Corp');
   assert.equal(pickCompany([{ name: 'Easy Apply', source: 'link' }, { name: 'greenhouse', source: 'url' }], { title: 'x', text, allowUnverified: true }), '');
   const r = await api('/api/capture', { method: 'POST', body: { text: 'Designer\nWe are hiring a designer to work on Figma prototypes and UX research with product and engineering every day.', url: 'https://boards.example.com/orbit-labs/jobs/77', externalId: '77', hints: { companyCandidates: [{ name: 'Orbit Labs', source: 'url' }, { name: 'LinkedIn', source: 'meta' }] } } });

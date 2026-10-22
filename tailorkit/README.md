@@ -13,7 +13,7 @@ cd tailorkit
 npm install
 cp .env.example .env        # optional; add ANTHROPIC_API_KEY to turn on AI (see "Modes")
 npm start                   # http://localhost:3000
-npm test                    # unit + API tests (AI paths use a fake client)
+npm test                    # unit + API + layout tests (AI paths use a fake client)
 npm run e2e                 # real Chromium + the real extension
 npm run e2e:ai              # AI-mode screens (research, prep, streaming chat) with a fake client
 ```
@@ -55,7 +55,8 @@ There is **no scraping** of Glassdoor, AmbitionBox, LinkedIn or Naukri (their te
 
 ## Layout
 ```
-server/   Express API, SQLite (node:sqlite), parsing, matching, tailoring, PDF, screening prep
+server/   Express API, SQLite (node:sqlite), layout-aware resume parsing (pdf-layout.js), matching, tailoring, PDF, interview prep
+server/fonts/  Carlito, Arimo, Tinos (SIL OFL) for faithful PDFs;  web/fonts/ Inter (SIL OFL) for the UI
 web/      dashboard (vanilla JS modules, no build step; user text is never put in innerHTML)
 extension/  Manifest V3 popup + on-click page capture
 test/     node:test unit + API tests (incl. PDF round trip)
@@ -63,7 +64,7 @@ fixtures/ sample resume and job description
 ```
 
 ## Known limits (be honest with users and yourself)
-- **Layout fidelity:** the candidate's layout is *rebuilt* from the detected structure for both PDF and DOCX uploads (same sections, order, headings, bullet glyph). It is not a pixel copy, and editing the original DOCX in place is not built yet. Fonts and column layouts are not preserved. The confirm step exists so candidates see this up front.
+- **Layout fidelity:** PDFs are read with their layout (positions, bold/italic, indentation, centred headings, page size, margins, font, bullet indent) and rebuilt with embedded metric-compatible fonts (Carlito for Calibri, Arimo for Arial, Tinos for Times), so line wraps and page count match the original. Verified on one real 2-page Google-Docs resume and on a synthetic fixture. Not reproduced: font colours, links, heading-bar colour (a neutral grey bar is used), images, multi-column layouts, tables. DOCX uploads keep bold/italic and bullets but not page size or alignment (the library does not expose them). Editing the original DOCX in place is not built.
 - **Resume parsing is heuristic.** Unusual layouts (multi-column, tables, scanned images) can be misread; the editor is the safety net. Scanned PDFs are rejected with a message.
 - **Site selectors are untested against live LinkedIn/Naukri.** They are best-effort and will change; the selection fallback and JSON-LD path are the dependable ones. Tested here against local fixture pages only.
 - **AI mode has not been run against the real API** (no key was available while building). Request shapes, the web-search pause/resume loop, fallbacks, caching, streaming and every screen are tested with a fake client; real model output quality, latency and cost are unmeasured.
@@ -72,6 +73,9 @@ fixtures/ sample resume and job description
 - **Auth** is bearer tokens in `localStorage` (30-day sessions) with scrypt password hashes and an in-memory rate limit, which is fine for one process, not for a scaled deployment.
 - **Not legal advice:** resumes are sensitive personal data. Before launch, add a privacy policy, DPDP Act consent, deletion/export (both are implemented in Settings), and consider encrypting resume data at rest.
 - Match scoring depends on a built-in skill dictionary (tech-heavy, with some marketing/sales/finance/HR terms). Roles outside it get fewer detected requirements ("No clear requirements found").
+
+## Launch
+See [`docs/launch-plan.md`](docs/launch-plan.md): website, accounts and access, where data lives, subscription and billing, compliance, phases and open decisions.
 
 ## Next
 Early-Bird Radar (new-job alerts), Insights (apply→call funnel), more templates, billing (UPI AutoPay), DOCX in-place editing.

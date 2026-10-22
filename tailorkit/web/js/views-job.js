@@ -4,6 +4,7 @@ import { icon } from './icons.js';
 import { renderMarkdown } from './markdown.js';
 import { STATUS_LABEL, scorePill, bandOf } from './views-tracking.js';
 
+
 const aiBadge = () => h('span', { class: 'ai-badge' }, icon('sparkle'), 'AI');
 
 export async function jobView(id, me, go) {
@@ -229,9 +230,8 @@ export async function jobView(id, me, go) {
       Object.entries(STATUS_LABEL).map(([v, l]) => h('option', { value: v, selected: v === job.status }, l)));
     const notes = h('textarea', { rows: 2, placeholder: 'Notes: recruiter name, referral, anything…' }); notes.value = job.notes || '';
     append(host,
-      h('a', { href: '#/tracking', class: 'small muted' }, '← Tracking'),
       h('div', { class: 'row between', style: 'margin-top:8px;align-items:flex-start' },
-        h('div', null, h('h1', null, job.title || 'Untitled role'), h('div', { class: 'muted' }, [job.company, job.location, job.source].filter(Boolean).join(' · ') || 'Company not detected'),
+        h('div', null, h('h1', null, job.title || 'Untitled role'), h('div', { class: 'row tight', style: 'margin-top:6px' }, job.company ? h('span', { class: 'chip primary' }, job.company) : h('span', { class: 'chip warn' }, 'Company not detected'), job.location && h('span', { class: 'chip' }, job.location), job.source && h('span', { class: 'chip' }, job.source)),
           h('div', { class: 'row', style: 'gap:12px' }, job.url && h('a', { class: 'small', href: job.url, target: '_blank', rel: 'noopener noreferrer' }, 'Open original posting ↗'),
             h('button', { class: 'btn sm ghost', onclick: () => { editing = !editing; draw(); } }, editing ? 'Cancel' : 'Edit details'))),
         h('div', { class: 'row' }, scorePill(job.match), status,
@@ -239,7 +239,10 @@ export async function jobView(id, me, go) {
       editing && editForm(),
       h('div', { class: 'tabs', role: 'tablist' }, [['overview', 'Overview', null], ['prep', 'Interview prep', 'sparkle'], ['chat', 'Ask AI', 'chat'], ['jd', 'Job text', null]].map(([k, l, ic]) =>
         h('button', { class: tab === k ? 'on' : '', role: 'tab', onclick: () => { tab = k; draw(); } }, ic && icon(ic, 16), l))));
-    if (tab === 'overview') host.append(overview(), h('div', { class: 'card' }, h('h3', null, 'Notes'), notes, h('div', { style: 'margin-top:10px' }, h('button', { class: 'btn sm', onclick: async () => { try { await api(`/api/jobs/${id}`, { method: 'PATCH', body: { notes: notes.value } }); toast('Notes saved'); } catch (e) { toast(e.message, true); } } }, 'Save notes'))));
+    if (tab === 'overview') host.append(h('div', { class: 'layout2' }, overview(), h('div', { class: 'stack' },
+      h('div', { class: 'card' }, h('h3', null, 'Details'), h('dl', { class: 'kv', style: 'grid-template-columns:90px 1fr;margin-top:6px' },
+        h('dt', null, 'Stage'), h('dd', null, STATUS_LABEL[job.status]), h('dt', null, 'Company'), h('dd', null, job.company || '–'), h('dt', null, 'Location'), h('dd', null, job.location || '–'), h('dt', null, 'Source'), h('dd', null, job.source || '–'), h('dt', null, 'Captured'), h('dd', null, fmtDate(job.createdAt) || '–'))),
+      h('div', { class: 'card' }, h('h3', null, 'Notes'), notes, h('div', { style: 'margin-top:10px' }, h('button', { class: 'btn sm', onclick: async () => { try { await api(`/api/jobs/${id}`, { method: 'PATCH', body: { notes: notes.value } }); toast('Notes saved'); } catch (e) { toast(e.message, true); } } }, 'Save notes'))))));
     else if (tab === 'prep') host.append(prepView());
     else if (tab === 'chat') host.append(chatView());
     else host.append(jdTab());

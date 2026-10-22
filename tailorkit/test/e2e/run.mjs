@@ -174,6 +174,8 @@ try {
     for (const t of ['Senior Backend Engineer', 'Product Analyst', 'Product Management Intern', 'Product Manager II']) assert.ok(titles.includes(t), `${t} in ${titles}`);
     await shot(dash, '05-board');
     await assertClean(dash, 'tracking');
+    const cos = await dash.locator('.jcard:has-text("Product Manager II") .c').allInnerTexts();
+    assert.ok(cos.length >= 2 && cos.every((c) => c === 'Kuku'), `company shown on the cards was ${JSON.stringify(cos)}`);
   });
 
   await step('interview prep: every question has a drafted answer, nothing asks the user for input', async () => {
@@ -195,7 +197,7 @@ try {
     await dash.click('.tabs >> text=Ask AI');
     await dash.waitForSelector('text=Ask AI needs an API key');
     await shot(dash, '07-chat-off');
-    await dash.goto(`${DASH}/#/settings`); await dash.waitForSelector('text=ANTHROPIC_API_KEY');
+    await dash.goto(`${DASH}/#/settings`); await dash.click('.tabs >> text=AI'); await dash.waitForSelector('text=ANTHROPIC_API_KEY');
     await shot(dash, '08-settings', true);
   });
 

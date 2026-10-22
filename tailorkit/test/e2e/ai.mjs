@@ -98,7 +98,7 @@ try {
     assert.equal(await page.locator('.msg.user').count(), 2);
   });
 
-  await step('settings shows AI on', async () => { await page.goto(`${DASH}/#/settings`); await page.waitForSelector('main .ai-badge'); assert.match(await page.locator('main').innerText(), /On · claude-opus-5-5/); await shot('settings'); });
+  await step('settings shows AI on', async () => { await page.goto(`${DASH}/#/settings`); await page.click('.tabs >> text=AI'); await page.waitForSelector('main .ai-badge'); assert.match(await page.locator('main').innerText(), /On · claude-opus-5-5/); await shot('settings'); });
   await step('no uncaught page errors', async () => assert.deepEqual(errors, []));
 } finally {
   await browser.close(); server.close(); await closeBrowser(); rmSync(tmp, { recursive: true, force: true }); setClientForTests(null);

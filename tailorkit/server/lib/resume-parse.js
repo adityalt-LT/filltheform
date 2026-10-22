@@ -176,6 +176,8 @@ function buildSection(heading, kind, body) {
     });
     return sec;
   }
+  // In documents with no bold text at all (plain text, simple DOCX) an entry title is just a short line above its bullets.
+  const unstyled = !body.some((x) => x.bold);
   let cur = null;
   const start = (title, subtitle, date, extra = {}) => { cur = { id: id(), title, subtitle, date, location: '', bullets: [], ...extra }; sec.items.push(cur); return cur; };
   body.forEach((b, k) => {
@@ -183,7 +185,7 @@ function buildSection(heading, kind, body) {
     const d = splitDate(b.plain);
     const isHeader = !b.bullet && !b.numbered && b.plain.length <= 140 && (
       (d.date && !(b.label && !b.bold) && (b.bold || b.dateRight || !cur || kind === 'education'))
-      || (b.bold && b.plain.length <= 80 && !b.label && next && (next.bullet || next.numbered || next.label)));
+      || ((b.bold || (unstyled && kind !== 'summary')) && b.plain.length <= 80 && !b.label && !/[.:;]$/.test(b.plain) && next && (next.bullet || next.numbered || next.label)));
     if (isHeader) {
       const t = splitTitle(d.date ? d.text : b.plain);
       start(t.title, t.subtitle, d.date, { sep: t.sep, dateBrackets: d.bracketed });

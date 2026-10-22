@@ -98,7 +98,8 @@ function extractPage() {
       const hd = a.querySelector('h1, [class*="top-card__job-title"], [class*="job-title"], [class*="jobTitle"]');
       const hdText = hd ? clean(hd.innerText).split('\n')[0] : '';
       if (links.length || hdText.length >= 3) {
-        for (const l of links.slice(0, 4)) addCo(l.innerText || l.getAttribute('aria-label') || (l.querySelector('img') && l.querySelector('img').alt), 'link');
+        // Prefer a link with visible text; a logo-only link falls back to its alt text ("Acme logo" is cleaned by the server).
+        for (const l of [...links].sort((a, b) => (b.innerText.trim() ? 1 : 0) - (a.innerText.trim() ? 1 : 0)).slice(0, 4)) addCo(l.innerText || l.getAttribute('aria-label') || (l.querySelector('img') && l.querySelector('img').alt), 'link');
         paneTitle = hdText;
         break;
       }

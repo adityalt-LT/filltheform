@@ -117,7 +117,7 @@ export function pickTitle(candidates, text) {
 // ---- Company: several weak signals from the page; the server keeps the best one that makes sense.
 const JOB_BOARDS = /\b(linkedin|naukri|indeed|glassdoor|foundit|monster|instahyre|wellfound|angellist|cutshort|shine|timesjobs|apna|internshala|greenhouse|lever|workday|myworkdayjobs|ashby|workable|smartrecruiters|jobvite|icims|taleo)\b/i;
 const SOURCE_WEIGHT = { link: 5, meta: 3, title: 2, url: 1 };
-const cleanCompany = (n) => String(n || '').replace(/\s+/g, ' ').replace(/^(careers?|jobs?|work)\s+(at|with|@)\s+/i, '').replace(/^join\s+/i, '').replace(/\s+[-–|]\s*(careers?|jobs?|hiring)$/i, '').replace(/\s+(careers?|jobs?)$/i, '').replace(/\s*\|\s*linkedin$/i, '').trim();
+const cleanCompany = (n) => String(n || '').replace(/\s+/g, ' ').replace(/\s+(company\s+)?(logo|icon|image)$/i, '').replace(/^(careers?|jobs?|work)\s+(at|with|@)\s+/i, '').replace(/^join\s+/i, '').replace(/\s+[-–|]\s*(careers?|jobs?|hiring)$/i, '').replace(/\s+(careers?|jobs?)$/i, '').replace(/\s*\|\s*linkedin$/i, '').trim();
 
 export function pickCompany(candidates, { title = '', text = '', allowUnverified = false } = {}) {
   const t = String(title).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
