@@ -28,53 +28,96 @@ export const PAGES = [
     schema: (c) => [{ '@type': 'SoftwareApplication', name: c.B.name, applicationCategory: 'BusinessApplication', operatingSystem: 'Chrome', description: c.B.description, offers: [{ '@type': 'Offer', price: '0', priceCurrency: 'INR', name: 'Free' }, { '@type': 'Offer', price: '299', priceCurrency: 'INR', name: 'Pro (monthly)' }] }],
     body: (c) => `
 <div class="wrap hero">
-  <span class="eyebrow">For job seekers in India</span>
-  <h1>${c.B.tagline}</h1>
-  <p class="lead">Open any job. ${c.B.name} reads it, scores it against your resume, and gives you a tailored copy in <em>your</em> layout, plus an interview brief for that company. You stay in control and press apply yourself.</p>
-  <div class="row"><a class="btn primary" href="#waitlist">Join the waitlist</a>${c.demo ? `<a class="btn" href="${c.demo}" target="_blank" rel="noopener">Try the live demo</a>` : `<a class="btn" href="${c.u('how-it-works')}">How it works</a>`}</div>
-  <p class="muted small">Free plan: 10 tailored resumes a month. No card needed.</p>
+  <div class="copy">
+    <span class="eyebrow">For job seekers in India</span>
+    <h1>Apply with a resume that <em>fits</em> every&nbsp;job.</h1>
+    <p class="lead">Open any job. ${c.B.name} measures it against your resume, then cuts a tailored copy in <span class="chalk">your own layout</span>, with an interview brief for that company. You stay in control and press apply yourself.</p>
+    <div class="row"><a class="btn primary" href="#waitlist">Join the waitlist</a>${c.demo ? `<a class="btn" href="${c.demo}" target="_blank" rel="noopener">Try the live demo →</a>` : `<a class="btn" href="${c.u('how-it-works')}">See how it works</a>`}</div>
+    <p class="fine">Free plan: 10 tailored resumes a month. No card needed.</p>
+  </div>
+  <div class="artwrap"><div class="art" role="img" aria-label="A resume and a job description pinned together. A tape measure shows an 86 out of 100 fit, and one missing skill is circled in red.">
+    <i class="crop-a"></i><i class="crop-b"></i>
+    <div class="paper" aria-hidden="true">
+      <div class="nm">RAHUL SHARMA</div><div class="ct">Bengaluru · rahul.sharma@example.com</div>
+      <div class="hd">EXPERIENCE</div>
+      <div class="jb">Software Engineer, PayNest <span>2022 – Present</span></div>
+      <div class="b">Built payment reconciliation services in Python and Django handling <mark>2 million transactions a day</mark></div>
+      <div class="b">Reduced API latency by <mark>38%</mark> with Redis caching and query tuning</div>
+      <div class="b">Containerised services with <span class="ring">Docker</span> and set up Jenkins pipelines</div>
+      <div class="sk m"></div><div class="sk s"></div>
+      <div class="hd">SKILLS</div>
+      <div class="sk m"></div><div class="sk"></div>
+    </div>
+    <div class="jd" aria-hidden="true">
+      <div class="lbl">Job · Acme Payments</div><div class="tt">Senior Backend Engineer</div>
+      <div class="req"><i>✓</i>Python, Django</div><div class="req"><i>✓</i>PostgreSQL, Redis</div><div class="req"><i>✓</i>REST API design</div><div class="req miss"><i>×</i>Kubernetes <em>missing</em></div>
+    </div>
+    <svg class="thread" viewBox="0 0 400 370" aria-hidden="true"><path d="M283 134 C 238 150, 262 186, 204 196 S 120 232, 138 250"/><path class="needle" d="M131 257 L151 241 M148 243 a2 2 0 1 1 3 -3"/></svg>
+    <div class="tailored stamp" aria-hidden="true">Tailored ✓</div>
+    <div class="tapeart" aria-hidden="true"><div class="t"></div><div class="n"><span style="left:0">0</span><span style="left:25%">25</span><span style="left:50%">50</span><span style="left:75%">75</span><span style="left:100%">100</span></div><div class="pin"><b>FIT 86</b></div></div>
+  </div></div>
 </div>
-<section class="block alt"><div class="wrap">
-  <div class="sechead"><span class="eyebrow">The problem</span><h2>Sending the same resume everywhere is why most applications go quiet</h2><p>A job description lists what the company needs. Your resume lists everything you have done. Matching the two by hand for every role takes an evening, so most people skip it, and the skills that matter end up on page two.</p></div>
-  <div class="grid">
-    <div class="card"><h3>You cannot see the gap</h3><p class="muted">Is Kubernetes a must-have or a nice-to-have? Do you mention it at all? Reading ten descriptions closely is slow work.</p></div>
-    <div class="card"><h3>Reformatting breaks resumes</h3><p class="muted">Generic resume builders replace your layout with a template. Then you have to rebuild the look you already trust.</p></div>
-    <div class="card"><h3>Applications disappear</h3><p class="muted">A spreadsheet of links does not tell you what you sent where, or what to prepare before the call.</p></div>
+<div class="ruler" aria-hidden="true"></div>
+<section class="block"><div class="wrap">
+  <span class="eyebrow">The problem</span>
+  <p class="statement reveal" style="margin-top:22px">A job description is a measurement. A resume is a garment. <strong>Most people send the same one, off the peg, to every job.</strong></p>
+  <div class="figs">
+    <div class="fig reveal"><span class="label">Fig. 1</span><h3>You can't see the gap</h3><p>Is Kubernetes a must-have or a nice-to-have? Do you mention it at all? Reading ten descriptions closely takes an evening.</p></div>
+    <div class="fig reveal"><span class="label">Fig. 2</span><h3>Templates rebuild your look</h3><p>Generic resume builders swap your layout for theirs. Then you re-do the formatting you already trust.</p></div>
+    <div class="fig reveal"><span class="label">Fig. 3</span><h3>Applications go quiet</h3><p>A spreadsheet of links will not tell you what you sent where, or what to prepare before the call.</p></div>
+  </div>
+</div></section>
+<section class="block paper"><div class="wrap">
+  <div class="sechead"><span class="eyebrow">The method</span><h2>Measure. Cut. Stitch. <em>Fit-check.</em></h2><p>The way a good tailor works, applied to a job application. Each step is something you can see and change.</p></div>
+  <div class="steps4">
+    <div class="tapeline" aria-hidden="true"></div>
+    <div class="step reveal"><span class="no">1</span><svg viewBox="0 0 48 48" aria-hidden="true"><rect x="5" y="17" width="38" height="14" rx="2" transform="rotate(-18 24 24)"/><path d="M12 25l0 -4M17 23.5l0 -3M22 22l0 -4M27 20.5l0 -3M32 19l0 -4M37 17.5l0 -3" transform="rotate(0)"/></svg><h3>Measure</h3><p>Capture any job page or LinkedIn hiring post. We read what it asks for and split must-haves from nice-to-haves.</p></div>
+    <div class="step reveal"><span class="no">2</span><svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="13" cy="35" r="5"/><circle cx="13" cy="13" r="5"/><path d="M17 16L42 36M17 32L42 12"/></svg><h3>Cut</h3><p>Your resume is read once, layout and all. Relevant bullets come forward and your numbers are highlighted. Nothing is invented.</p></div>
+    <div class="step reveal"><span class="no">3</span><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M10 38L38 10"/><circle cx="36" cy="12" r="2"/><path d="M10 38c-6 1-8 4-7 7 3 1 6-1 7-7z"/></svg><h3>Stitch</h3><p>Confirm a skill you really have and it is stitched into your profile and every future resume. Edit anything in the live preview.</p></div>
+    <div class="step reveal"><span class="no">4</span><svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="17"/><path d="M15 25l6 6 12-13"/></svg><h3>Fit-check</h3><p>Download a clean PDF, then walk in prepared: likely questions with answers drafted from your own resume.</p></div>
   </div>
 </div></section>
 <section class="block"><div class="wrap">
-  <div class="sechead"><span class="eyebrow">What you get</span><h2>One extension, one dashboard, one login</h2></div>
-  <div class="grid">
-    <div class="card"><span class="num">1</span><h3>Match score you can explain</h3><p class="muted">Every point comes from a listed check: required skills, nice-to-haves, years of experience and role similarity. You see exactly what is missing.</p></div>
-    <div class="card"><span class="num">2</span><h3>A resume that fits the job</h3><p class="muted">Same headings, bullets and dates as yours. Relevant bullets move up, numbers are highlighted, and skills you confirm are added. It never invents anything.</p></div>
-    <div class="card"><span class="num">3</span><h3>Interview prep for that company</h3><p class="muted">Likely questions with answers drafted from your own resume, what the company does, and what to ask back. With AI on, the research cites its sources.</p></div>
-    <div class="card"><span class="num">4</span><h3>A board for your search</h3><p class="muted">Saved, applied, screening call, interview, offer. Every job keeps its score, its tailored resume and your notes.</p></div>
+  <div class="sechead"><span class="eyebrow">The real thing</span><h2>Every job on one <em>rail</em>, every score explained</h2><p>A job board with a fit score you can read, the exact gaps, and the tailored resume attached to each role.</p></div>
+  <div class="shots">
+    <figure class="frame reveal" style="margin:0"><div class="bar"><i></i><i></i><i></i></div><img src="${c.asset('shot-job.jpg')}" width="1280" height="860" alt="The job page: a 79 percent fit shown on a tape measure, with the score broken down by must-have skills, nice-to-haves, experience and role similarity."></figure>
+    <figure class="frame reveal" style="margin:0"><div class="bar"><i></i><i></i><i></i></div><img src="${c.asset('shot-board.jpg')}" width="1280" height="860" alt="The tracking board with jobs grouped by stage, each shown as a tag with its fit score."></figure>
+  </div>
+  <p class="cap">Screens from the live demo with sample data</p>
+</div></section>
+<section class="block paper"><div class="wrap">
+  <div class="sechead"><span class="eyebrow">Our word</span><h2>Three things we will <em>never</em> do</h2><p>A tool that touches your job search should be clear about its limits.</p></div>
+  <div class="oath">
+    <div class="label-tag reveal"><span class="label">No. 1</span><h3>Apply for you</h3><p>It never submits anything. You open the job, you press apply, so every application is one you chose.</p></div>
+    <div class="label-tag reveal"><span class="label">No. 2</span><h3>Invent a skill</h3><p>Tailoring reorders and highlights what is true. A skill is added only after you confirm it.</p></div>
+    <div class="label-tag reveal"><span class="label">No. 3</span><h3>Promise a job</h3><p>The score compares your resume with the description. It cannot predict what a recruiter will do, and we will not pretend it can.</p></div>
   </div>
 </div></section>
-<section class="block alt"><div class="wrap">
-  <div class="sechead"><span class="eyebrow">How it works</span><h2>From job page to tailored PDF in minutes</h2></div>
+<section class="block"><div class="wrap">
+  <div class="sechead"><span class="eyebrow">Pricing</span><h2>Start free. Pay when your search gets <em>busy</em>.</h2></div>
   <div class="grid">
-    <div class="card plain"><span class="num">1</span><h3>Upload your resume once</h3><p class="muted">PDF, DOCX or text. Your profile is built from it, so you are not filling long forms.</p></div>
-    <div class="card plain"><span class="num">2</span><h3>Capture a job</h3><p class="muted">Click the extension on any job page or LinkedIn hiring post. Or paste the description.</p></div>
-    <div class="card plain"><span class="num">3</span><h3>Review and download</h3><p class="muted">See the score and gaps, edit anything, download the PDF, and apply on the company's site.</p></div>
+    <div class="card seam plan reveal"><h3>Free</h3><div class="price">₹0</div><p class="muted">For trying it on a few jobs.</p><ul><li>10 tailored resumes a month</li><li>Match score and skill gaps</li><li>Job board and resume editor</li><li>Basic interview prep</li></ul></div>
+    <div class="card seam plan featured reveal"><span class="badge">Planned</span><h3>Pro</h3><div class="price">₹299 <small>/ month</small></div><p class="muted">Or ₹699 for 3 months. Prices include GST.</p><ul><li>Unlimited tailored resumes (fair use)</li><li>AI interview prep with sources</li><li>Ask AI about any job</li></ul><a class="btn on-dark" href="#waitlist">Join the waitlist</a></div>
   </div>
-  <p style="margin-top:24px"><a href="${c.u('how-it-works')}">Read the full walkthrough →</a></p>
+  <p style="margin-top:22px"><a href="${c.u('pricing')}">Compare plans in full →</a></p>
 </div></section>
-<section class="block"><div class="wrap narrow">
-  <div class="sechead"><span class="eyebrow">Free tool</span><h2>Check your resume against a job description now</h2><p>Paste both and see which required skills your resume mentions. It runs in your browser: nothing you paste is uploaded.</p></div>
-  <a class="btn" href="${c.u('tools/resume-keyword-checker')}">Open the keyword checker</a>
+<section class="block paper"><div class="wrap narrow">
+  <div class="sechead"><span class="eyebrow">Free tool</span><h2>Check your resume against a job <em>right now</em></h2><p>Paste both and see which required skills your resume mentions. It runs in your browser: nothing you paste is uploaded.</p></div>
+  <a class="btn primary" href="${c.u('tools/resume-keyword-checker')}">Open the keyword checker</a>
 </div></section>
-<section class="block alt" id="waitlist"><div class="wrap narrow">
-  <div class="sechead"><span class="eyebrow">Early access</span><h2>Be first in when it opens</h2><p>We are letting people in gradually. Leave your email and we will write when your spot is ready. One email, no spam, and you can leave any time.</p></div>
-  ${waitlist(c, 'home')}
+<section class="block" id="waitlist"><div class="wrap">
+  <div class="band">
+    <span class="eyebrow" style="color:var(--chalk)">Early access</span>
+    <h2>Be first through the <em>door</em>.</h2>
+    <p>We are letting people in gradually. Leave your email and we will write when your spot is ready. One email, no spam, and you can leave any time.</p>
+    ${waitlist(c, 'home')}
+  </div>
 </div></section>`,
   },
   {
     slug: 'how-it-works', nav: 'How it works', title: () => 'How it works: capture a job, tailor your resume', desc: 'Upload your resume once, capture any job with the extension, review the score and gaps, download a tailored PDF and prepare for the interview.',
     body: (c) => `
-<div class="wrap narrow prose" style="padding-block:56px 80px">
-  <h1>How it works</h1>
-  <p class="muted">Five steps. The first one takes a minute, the rest repeat for every job.</p>
+<div class="wrap narrow"><div class="pagehead"><h1>How it <em>works</em></h1><p class="lead">Six small steps. The first takes a minute, the rest repeat for every job.</p></div><div class="prose" style="padding-bottom:100px">
   <h2>1. Upload your resume</h2><p>Upload a PDF, DOCX or text file. We read the layout: headings, bullet style, date format, fonts and spacing. Your profile (name, contact details, experience, skills) is built from it, so there is no long form to fill. You confirm what we found and fix anything that is off.</p>
   <h2>2. Capture a job</h2><p>Open a job page or a LinkedIn hiring post and click the extension. It reads the visible text, finds the title and company, and sends it to your dashboard. You can also paste a description directly into the dashboard. Capturing the same job twice updates it rather than adding a duplicate.</p>
   <h2>3. See the match and the gaps</h2><p>The score is built from four checks with fixed weights: required skills, nice-to-have skills, years of experience and role similarity. Each missing skill is listed. If you do have one, click “I have this” and it is saved to your profile, the score updates, and the skill is added to future tailored resumes.</p>
@@ -83,16 +126,16 @@ export const PAGES = [
   <h2>5. Prepare for the interview</h2><p>Each job gets a brief: what they are looking for, where you are strong, gaps and how to frame them honestly, and likely questions with answers drafted from your resume. With AI on, it also researches the company and cites its sources. These are predictions, not what you will definitely be asked.</p>
   <h2>6. Track it</h2><p>Move the job through Saved, Applied, Screening call, Interview and Offer. Notes and the tailored resume stay with the job, so you know exactly what you sent.</p>
   <p><a class="btn primary" href="${c.u('index')}#waitlist">Join the waitlist</a></p>
-</div>`,
+</div></div>`,
   },
   {
     slug: 'pricing', nav: 'Pricing', title: () => 'Pricing: free plan and Pro from ₹299 a month', desc: 'Start free with 10 tailored resumes a month. Pro adds unlimited tailoring and AI interview prep. Prices include GST. Billing opens soon.',
     body: (c) => `
-<div class="wrap" style="padding-block:56px 80px">
-  <div class="sechead"><h1>Simple pricing</h1><p>Start free. Upgrade when your search gets busy. Prices are in rupees and include GST.</p></div>
+<div class="wrap" style="padding-bottom:100px">
+  <div class="pagehead"><h1>Simple <em>pricing</em></h1><p class="lead">Start free. Upgrade when your search gets busy. Prices are in rupees and include GST.</p></div>
   <div class="grid">
-    <div class="card plan"><h3>Free</h3><div class="price">₹0</div><p class="muted">For trying it on a few jobs.</p><ul class="prose"><li>10 tailored resumes a month</li><li>Match score and skill gaps</li><li>Job board and notes</li><li>Resume editor and PDF</li><li>Basic interview prep</li></ul></div>
-    <div class="card plan featured"><span class="badge">Planned</span><h3>Pro</h3><div class="price">₹299 <small>/ month</small></div><p class="muted">Or ₹699 for 3 months, since most searches run 2 to 4 months.</p><ul class="prose"><li>Everything in Free</li><li>Unlimited tailored resumes (fair use)</li><li>AI interview prep with company research and sources</li><li>Ask AI about any job</li></ul>
+    <div class="card seam plan"><h3>Free</h3><div class="price">₹0</div><p class="muted">For trying it on a few jobs.</p><ul class="prose"><li>10 tailored resumes a month</li><li>Match score and skill gaps</li><li>Job board and notes</li><li>Resume editor and PDF</li><li>Basic interview prep</li></ul></div>
+    <div class="card seam plan featured"><span class="badge">Planned</span><h3>Pro</h3><div class="price">₹299 <small>/ month</small></div><p class="muted">Or ₹699 for 3 months, since most searches run 2 to 4 months.</p><ul class="prose"><li>Everything in Free</li><li>Unlimited tailored resumes (fair use)</li><li>AI interview prep with company research and sources</li><li>Ask AI about any job</li></ul>
       <a class="btn primary" href="${c.u('index')}#waitlist">Join the waitlist</a></div>
   </div>
   <div class="callout warn" style="margin-top:28px">Billing is not open yet. These are the planned prices. Waitlist members hear first, and we will not charge anyone without clear notice and their consent. Cancellation and refunds will follow the <a href="${c.u('refund')}">refund policy</a>.</div>
@@ -114,7 +157,7 @@ export const PAGES = [
   {
     slug: 'faq', nav: 'FAQ', title: () => 'FAQ: privacy, AI, supported sites and limits', desc: 'Answers about what the extension does, what it never does, which sites it supports, how AI is used, pricing and your data.',
     schema: (c) => [{ '@type': 'FAQPage', mainEntity: faqItems(c).map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })) }],
-    body: (c) => `<div class="wrap narrow" style="padding-block:56px 80px"><div class="sechead"><h1>Frequently asked questions</h1></div>${faqItems(c).map(([q, a]) => `<details><summary>${q}</summary><p>${a}</p></details>`).join('')}
+    body: (c) => `<div class="wrap narrow" style="padding-bottom:100px"><div class="pagehead"><h1>Frequently asked <em>questions</em></h1></div>${faqItems(c).map(([q, a]) => `<details><summary>${q}</summary><p>${a}</p></details>`).join('')}
   <p style="margin-top:32px" class="muted">Something missing? Email <a href="mailto:${c.B.supportEmail}">${c.B.supportEmail}</a>.</p></div>`,
   },
   {
@@ -122,9 +165,8 @@ export const PAGES = [
     schema: (c) => [{ '@type': 'WebApplication', name: 'Resume keyword checker', applicationCategory: 'BusinessApplication', operatingSystem: 'Any', offers: { '@type': 'Offer', price: '0', priceCurrency: 'INR' }, url: c.abs('tools/resume-keyword-checker') }],
     extraHead: (c) => '', script: 'checker',
     body: (c) => `
-<div class="wrap narrow" style="padding-block:56px 80px">
-  <div class="crumbs"><a href="${c.u('index')}">Home</a> / Tools</div>
-  <div class="sechead"><h1>Resume keyword checker</h1><p>See which skills a job asks for that your resume does not mention yet. Paste your resume text and the job description. Everything runs in your browser, so nothing is uploaded or stored.</p></div>
+<div class="wrap narrow" style="padding-bottom:100px">
+  <div class="pagehead"><div class="crumbs"><a href="${c.u('index')}">Home</a> / Tools</div><h1>Resume keyword <em>checker</em></h1><p class="lead">See which skills a job asks for that your resume does not mention yet. Paste your resume text and the job description. Everything runs in your browser, so nothing is uploaded or stored.</p></div>
   <div class="cols2">
     <label><strong>Your resume (text)</strong><textarea id="resume" placeholder="Paste your resume text here"></textarea></label>
     <label><strong>Job description</strong><textarea id="jd" placeholder="Paste the full job description, including the requirements"></textarea></label>
@@ -142,25 +184,25 @@ export const PAGES = [
   },
   {
     slug: 'guides', nav: 'Guides', title: () => 'Guides: resumes, applications and interviews for Indian job seekers', desc: 'Practical, honest guides on tailoring a resume, tracking applications and preparing for interviews.',
-    body: (c) => `<div class="wrap" style="padding-block:56px 80px"><div class="sechead"><h1>Guides</h1><p>Practical advice for people looking for work in India. No tricks and no invented statistics.</p></div>
-  <div class="grid">${c.guides.map((g) => `<a class="card" href="${c.u(g.slug)}" style="text-decoration:none;color:inherit"><span class="eyebrow">${g.tag}</span><h3>${g.h1}</h3><p class="muted">${g.desc}</p><span style="color:var(--primary)">Read the guide →</span></a>`).join('')}</div></div>`,
+    body: (c) => `<div class="wrap" style="padding-bottom:100px"><div class="pagehead"><h1>The <em>guides</em></h1><p class="lead">Practical advice for people looking for work in India. No tricks and no invented statistics.</p></div>
+  <div class="grid">${c.guides.map((g) => `<a class="card seam guidecard" href="${c.u(g.slug)}"><span class="eyebrow">${g.tag}</span><h3>${g.h1}</h3><p class="muted">${g.desc}</p><span class="go">Read the guide →</span></a>`).join('')}</div></div>`,
   },
   {
     slug: 'about', nav: false, title: (B) => `About ${B.name}`, desc: 'Why we are building a job-search tool around tailoring, tracking and interview prep, and what we will not do.',
-    body: (c) => `<div class="wrap narrow prose" style="padding-block:56px 80px"><h1>About ${c.B.name}</h1>
+    body: (c) => `<div class="wrap narrow"><div class="pagehead"><h1>About ${c.B.name}</h1></div><div class="prose" style="padding-bottom:100px">
   <p>Job hunting in India means many applications, many tabs and very little feedback. We are building one place to keep it organised and to make each application a better fit than the last.</p>
   <h2>What we believe</h2><ul><li>A good tool does not apply for you. You choose where to apply and you press the button.</li><li>It should never invent experience. Tailoring is about emphasis, not fiction.</li><li>Scores must be explainable. If we say 70%, you can see why.</li><li>Your data is yours. You can export it or delete it at any time.</li></ul>
-  <h2>Who is behind it</h2><p>${c.B.legalName}. ${c.B.address}. Contact: <a href="mailto:${c.B.supportEmail}">${c.B.supportEmail}</a>.</p></div>`,
+  <h2>Who is behind it</h2><p>${c.B.legalName}. ${c.B.address}. Contact: <a href="mailto:${c.B.supportEmail}">${c.B.supportEmail}</a>.</p></div></div>`,
   },
   {
     slug: 'contact', nav: false, title: (B) => `Contact ${B.name}`, desc: 'Support, feedback and the grievance officer contact details.',
-    body: (c) => `<div class="wrap narrow prose" style="padding-block:56px 80px"><h1>Contact</h1>
+    body: (c) => `<div class="wrap narrow"><div class="pagehead"><h1>Contact</h1></div><div class="prose" style="padding-bottom:100px">
   <h2>Support and feedback</h2><p>Email <a href="mailto:${c.B.supportEmail}">${c.B.supportEmail}</a>. Please include the browser you use and, for problems with a job page, its address.</p>
-  <h2>Grievance officer</h2><p>For privacy or data complaints: <a href="mailto:${c.B.grievanceEmail}">${c.B.grievanceEmail}</a>. Registered address: ${c.B.address}.</p></div>`,
+  <h2>Grievance officer</h2><p>For privacy or data complaints: <a href="mailto:${c.B.grievanceEmail}">${c.B.grievanceEmail}</a>. Registered address: ${c.B.address}.</p></div></div>`,
   },
   {
     slug: 'privacy', nav: false, legal: true, title: (B) => `Privacy policy | ${B.name}`, desc: 'What data we collect, why, how long we keep it and how to export or delete it. Draft pending legal review.',
-    body: (c) => `<div class="wrap narrow prose" style="padding-block:56px 80px"><h1>Privacy policy</h1>
+    body: (c) => `<div class="wrap narrow"><div class="pagehead"><h1>Privacy policy</h1></div><div class="prose" style="padding-bottom:100px">
   <div class="callout warn"><strong>Draft.</strong> This text is a starting point for your lawyer. It must be reviewed against the Digital Personal Data Protection Act, 2023 and the current rules before launch.</div>
   <p class="muted">Last updated: [date]. Operator: ${c.B.legalName}, ${c.B.address}.</p>
   <h2>What we collect</h2><ul><li><strong>Account:</strong> your email address and a hashed password.</li><li><strong>Your resume and profile:</strong> the file you upload and the details read from it.</li><li><strong>Jobs you capture:</strong> the text of the page you chose to capture, its address, and your notes and status.</li><li><strong>Usage:</strong> counts needed to apply plan limits, and basic error logs.</li></ul>
@@ -168,25 +210,25 @@ export const PAGES = [
   <h2>The extension</h2><p>It reads a page only when you click it, and only sends the text you capture to your own account.</p>
   <h2>AI processing</h2><p>When AI features are on, the relevant parts of your resume and the job description are sent to our AI provider to produce your prep. [Name the provider, its location and its retention terms here after review.]</p>
   <h2>Retention, export and deletion</h2><p>You can export everything and delete your account from Settings. Deletion removes your profile, resumes and jobs. [State backup retention here.]</p>
-  <h2>Your rights and complaints</h2><p>Write to <a href="mailto:${c.B.grievanceEmail}">${c.B.grievanceEmail}</a>. [Add response time and the Data Protection Board route after review.]</p></div>`,
+  <h2>Your rights and complaints</h2><p>Write to <a href="mailto:${c.B.grievanceEmail}">${c.B.grievanceEmail}</a>. [Add response time and the Data Protection Board route after review.]</p></div></div>`,
   },
   {
     slug: 'terms', nav: false, legal: true, title: (B) => `Terms of service | ${B.name}`, desc: 'The terms for using the service. Draft pending legal review.',
-    body: (c) => `<div class="wrap narrow prose" style="padding-block:56px 80px"><h1>Terms of service</h1>
+    body: (c) => `<div class="wrap narrow"><div class="pagehead"><h1>Terms of service</h1></div><div class="prose" style="padding-bottom:100px">
   <div class="callout warn"><strong>Draft.</strong> Have a lawyer review and complete this before launch.</div>
   <h2>The service</h2><p>${c.B.name} helps you tailor resumes, track applications and prepare for interviews. It does not apply to jobs for you and does not guarantee interviews, offers or any outcome.</p>
   <h2>Your content</h2><p>You own your resume and data. You confirm that everything in your resume is true and that you have the right to upload it. You are responsible for what you send to employers.</p>
   <h2>Acceptable use</h2><p>No automated bulk use, no attempts to bypass limits, and no use against the terms of the job sites you visit.</p>
   <h2>Plans and payment</h2><p>Paid plans renew until cancelled. Prices include GST. See the <a href="${c.u('refund')}">refund and cancellation policy</a>.</p>
-  <h2>Liability</h2><p>[Limitation of liability, governing law and jurisdiction to be completed by counsel.]</p></div>`,
+  <h2>Liability</h2><p>[Limitation of liability, governing law and jurisdiction to be completed by counsel.]</p></div></div>`,
   },
   {
     slug: 'refund', nav: false, legal: true, title: (B) => `Refund and cancellation | ${B.name}`, desc: 'How to cancel a paid plan and when refunds are given. Draft pending legal review.',
-    body: (c) => `<div class="wrap narrow prose" style="padding-block:56px 80px"><h1>Refund and cancellation</h1>
+    body: (c) => `<div class="wrap narrow"><div class="pagehead"><h1>Refund and cancellation</h1></div><div class="prose" style="padding-bottom:100px">
   <div class="callout warn"><strong>Draft.</strong> Payment providers require this page. Decide the policy, then have it reviewed.</div>
   <h2>Cancel any time</h2><p>Cancel from Settings. Your plan stays active until the end of the period you paid for and does not renew.</p>
   <h2>Refunds</h2><p>[State the refund window, for example a full refund within 7 days of the first payment if you have not used the paid features, and the process and timeline for refunds to the original payment method.]</p>
-  <h2>Contact</h2><p><a href="mailto:${c.B.supportEmail}">${c.B.supportEmail}</a></p></div>`,
+  <h2>Contact</h2><p><a href="mailto:${c.B.supportEmail}">${c.B.supportEmail}</a></p></div></div>`,
   },
 ];
 

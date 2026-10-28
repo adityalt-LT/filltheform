@@ -448,7 +448,7 @@ export function createApp({ dbPath = process.env.DB_PATH || 'data/tailorkit.db',
 
   // ---------- dashboard (static)
   app.use((req, res, next) => {
-    if (!req.path.startsWith('/api')) res.set('Content-Security-Policy', "default-src 'self'; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
+    if (!req.path.startsWith('/api')) res.set('Content-Security-Policy', "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
     next();
   });
   app.use(express.static(WEB_DIR, { extensions: ['html'] }));

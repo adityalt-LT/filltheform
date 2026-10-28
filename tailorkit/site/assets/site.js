@@ -16,3 +16,10 @@ for (const form of document.querySelectorAll('form.waitlist')) {
     } catch (err) { msg.className = 'msg err'; msg.textContent = err.message; } finally { btn.disabled = false; }
   });
 }
+
+// Fade sections in as they scroll into view. Without JavaScript (or with reduced motion) everything is simply visible.
+const items = [...document.querySelectorAll('.reveal')];
+if ('IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  const io = new IntersectionObserver((entries) => { for (const e of entries) if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }, { rootMargin: '0px 0px -8% 0px' });
+  items.forEach((el) => io.observe(el));
+} else items.forEach((el) => el.classList.add('in'));

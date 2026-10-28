@@ -1,9 +1,9 @@
 import { h } from './dom.js';
 import { api, setToken } from './api.js';
-import { icon } from './icons.js';
+import { logoMark } from './icons.js';
 import { BRAND } from '../brand.js';
 
-const point = (title, text) => h('li', null, h('span', { class: 'iconbox', style: 'margin:0;width:32px;height:32px;background:rgba(255,255,255,.16);color:#fff;border-radius:8px' }, icon('check', 16)), h('div', null, h('div', { style: 'font-weight:600' }, title), h('div', { style: 'opacity:.85;font-size:13.5px' }, text)));
+const point = (n, title, text) => h('li', null, h('span', { class: 'num' }, n), h('div', null, h('div', { style: 'font-weight:600' }, title), h('div', { style: 'opacity:.8;font-size:13.5px' }, text)));
 
 export function authView(onDone) {
   let mode = 'signup';
@@ -21,7 +21,7 @@ export function authView(onDone) {
     } }, h('label', { class: 'field' }, 'Email', email), h('label', { class: 'field' }, 'Password', pass), err, btn);
     host.append(
       h('div', { class: 'authform' }, h('div', { class: 'auth' },
-        h('div', { class: 'logo', style: 'padding-left:0;padding-bottom:28px' }, h('i', null, BRAND.mark), BRAND.name),
+        h('div', { class: 'logo', style: 'padding-left:0;padding-bottom:34px' }, logoMark(), BRAND.name),
         h('h1', null, mode === 'signup' ? 'Create your account' : 'Welcome back'),
         h('p', { class: 'sub' }, mode === 'signup' ? 'Start tailoring your resume to every job in minutes.' : 'Sign in to continue to your workspace.'),
         form,
@@ -29,10 +29,12 @@ export function authView(onDone) {
           h('a', { href: '#', onclick: (e) => { e.preventDefault(); mode = mode === 'signup' ? 'login' : 'signup'; render(); } }, mode === 'signup' ? 'Sign in' : 'Create an account')),
         h('p', { class: 'small faint', style: 'text-align:center' }, 'The same account signs you in to the Chrome extension.'))),
       h('div', { class: 'authpanel' },
-        h('h2', null, 'Apply with a resume that fits every job.'),
-        h('ul', null, point('Keeps your resume’s own layout', 'Same sections, fonts and spacing. We only reorder and highlight.'), point('Shows what’s missing', 'A match score and the exact skills a screener may look for.'), point('Interview brief for each job', 'Company research and answers drafted from your resume.')),
-        h('div', { class: 'mock' }, h('div', { class: 'row between' }, h('div', null, h('div', { style: 'font-weight:600' }, 'Product Manager'), h('div', { style: 'opacity:.8;font-size:13px' }, 'Acme Inc · Bengaluru')), h('span', { class: 'chip', style: 'background:#fff;color:#067647;border:0' }, '87% match')),
-          h('div', { class: 'meter', style: 'background:rgba(255,255,255,.25);margin:14px 0 8px' }, h('i', { style: 'width:87%;background:#fff' })), h('div', { style: 'font-size:12.5px;opacity:.85' }, '5 of 7 must-have skills covered'))));
+        h('h2', null, 'Apply with a resume that ', h('em', null, 'fits'), ' every job.'),
+        h('ul', null, point('01', 'Your layout, kept', 'Same sections, fonts and spacing. We only reorder and highlight.'), point('02', 'Measured against the job', 'A fit score and the exact skills a screener may look for.'), point('03', 'Briefed for the interview', 'Company research and answers drafted from your resume.')),
+        h('div', { class: 'fit-art' }, h('div', { class: 'tag' },
+          h('div', { class: 'row between', style: 'padding-right:22px;align-items:flex-start' }, h('div', null, h('div', { style: 'font-family:var(--display);font-size:20px;font-weight:520;letter-spacing:-.01em' }, 'Product Manager'), h('div', { style: 'color:#6c6453;font-size:13px' }, 'Acme Inc · Bengaluru')), h('span', { class: 'stamp' }, 'Fit 87')),
+          h('div', { class: 'tape', style: 'margin-top:20px;height:34px' }, h('div', { class: 'ticks' }), h('i', { class: 'pin', style: '--pct:87' })),
+          h('div', { style: 'font-size:12.5px;color:#6c6453;margin-top:14px' }, '5 of 7 must-have skills covered. Two to confirm.')))));
   };
   render();
   return host;

@@ -138,7 +138,7 @@ try {
 
   await step('job page: Kubernetes is the only must-have gap; confirming it updates the score', async () => {
     await dash.goto(`${DASH}/#/tracking`); await dash.waitForSelector('.board');
-    await dash.click('.jcard:has-text("Senior Backend")'); await dash.waitForSelector('.ring');
+    await dash.click('.jcard:has-text("Senior Backend")'); await dash.waitForSelector('.fit');
     const gaps = await dash.locator('.gap .chip').allInnerTexts();
     assert.ok(gaps.includes('Kubernetes'), `gaps were ${gaps}`);
     // Requirements split across list items must all be detected (this fails if line breaks are lost in capture).
@@ -147,9 +147,9 @@ try {
     assert.ok(gaps.includes('Terraform') && gaps.includes('Kafka'), `nice-to-haves after "Good to have" should be detected; gaps were ${gaps}`);
     await shot(dash, '09-job-overview', true);
     await assertClean(dash, 'job overview');
-    const before = Number(await dash.locator('.ring > div').innerText());
+    const before = parseInt(await dash.locator('.fit .num').innerText(), 10);
     await dash.click('.gap:has(.chip:text-is("Kubernetes")) >> text=I have this'); await dash.waitForTimeout(500);
-    assert.ok(Number(await dash.locator('.ring > div').innerText()) > before);
+    assert.ok(parseInt(await dash.locator('.fit .num').innerText(), 10) > before);
   });
 
   await step('re-tailor, edit: remove bullet updates preview, undo restores, PDF downloads', async () => {
@@ -180,7 +180,7 @@ try {
   });
 
   await step('interview prep: every question has a drafted answer, nothing asks the user for input', async () => {
-    await dash.click('.jcard:has-text("Product Management Intern")'); await dash.waitForSelector('.ring');
+    await dash.click('.jcard:has-text("Product Management Intern")'); await dash.waitForSelector('.fit');
     await dash.click('.tabs >> text=Interview prep');
     await dash.waitForSelector('.oneliner', { timeout: 30000 });
     await shot(dash, '06-prep', true);

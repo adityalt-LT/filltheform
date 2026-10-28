@@ -1,6 +1,6 @@
 import { h, clear, spinner, toast } from './dom.js';
 import { api, getToken, setToken } from './api.js';
-import { icon } from './icons.js';
+import { icon, logoMark } from './icons.js';
 import { BRAND } from '../brand.js';
 import { authView } from './views-auth.js';
 import { welcomeView, profileView, masterEditorView } from './views-profile.js';
@@ -35,7 +35,7 @@ function shell(hash, page, arg, main) {
     setTimeout(() => document.addEventListener('click', () => { menu?.remove(); menu = null; }, { once: true }));
   } }, h('span', { class: 'avatar' }, initials(me.user.email)), h('span', { class: 'grow', style: 'overflow:hidden' }, h('div', { style: 'font-weight:550;overflow:hidden;text-overflow:ellipsis' }, me.user.email.split('@')[0]), h('div', { class: 'small muted' }, me.user.plan === 'free' ? 'Free plan' : me.user.plan)), icon('chevron', 16));
   const side = h('aside', { class: 'sidebar', style: 'position:sticky' },
-    h('div', { class: 'logo' }, h('i', null, BRAND.mark), BRAND.name),
+    h('div', { class: 'logo' }, logoMark(), BRAND.name),
     GROUPS.map(([label, items]) => [h('div', { class: 'navlabel' }, label), items.map((n) => navLink(hash, n))]),
     h('div', { class: 'side-foot' },
       q.limit != null && h('div', { class: 'plan' }, h('div', { class: 'row between small' }, h('strong', null, 'Free plan'), h('span', { class: 'muted' }, `${q.used} / ${q.limit} resumes`)), h('div', { class: 'meter' }, h('i', { style: `width:${pct}%` })),

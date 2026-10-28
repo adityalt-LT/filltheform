@@ -5,7 +5,7 @@ const P = {
   target: [['circle', { cx: 12, cy: 12, r: 9 }], ['circle', { cx: 12, cy: 12, r: 5 }], ['circle', { cx: 12, cy: 12, r: 1 }]],
   user: [['path', { d: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2' }], ['circle', { cx: 12, cy: 7, r: 4 }]],
   settings: [['path', { d: 'M4 6h10M18 6h2M4 12h2M10 12h10M4 18h12M20 18h0' }], ['circle', { cx: 16, cy: 6, r: 2 }], ['circle', { cx: 8, cy: 12, r: 2 }], ['circle', { cx: 18, cy: 18, r: 2 }]],
-  sparkle: [['path', { d: 'M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z' }], ['path', { d: 'M19 15l.7 1.8 1.8.7-1.8.7L19 20l-.7-1.8-1.8-.7 1.8-.7z' }]],
+  sparkle: [['path', { d: 'M7.5 16.5L20 4' }], ['circle', { cx: 18.9, cy: 5.1, r: 1.2 }], ['path', { d: 'M7.5 16.5c-3 .2-4.2 1.7-3.6 4.1 2.4.6 3.9-.6 4.1-3.6' }]],
   send: [['path', { d: 'M12 19V5M5 12l7-7 7 7' }]],
   check: [['path', { d: 'M20 6L9 17l-5-5' }]],
   copy: [['rect', { x: 9, y: 9, width: 11, height: 11, rx: 2 }], ['path', { d: 'M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1' }]],
@@ -33,4 +33,17 @@ export function icon(name, size) {
     svg.append(el);
   }
   return svg;
+}
+
+// The brand mark: a sewing button with a cross-stitch. Rim and holes follow the text colour; the thread is the accent.
+export function logoMark() {
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 32 32'); svg.setAttribute('aria-hidden', 'true');
+  const add = (tag, attrs) => { const el = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v); svg.append(el); };
+  add('circle', { cx: 16, cy: 16, r: 14, fill: 'none', stroke: 'currentColor', 'stroke-width': 2 });
+  add('circle', { cx: 16, cy: 16, r: 10.2, fill: 'none', stroke: 'currentColor', 'stroke-width': 1, 'stroke-dasharray': '1.6 2.2', opacity: .55 });
+  add('path', { d: 'M11.6 11.6l8.8 8.8M20.4 11.6l-8.8 8.8', stroke: 'var(--thread)', 'stroke-width': 2.4, 'stroke-linecap': 'round', fill: 'none' });
+  for (const [x, y] of [[11.6, 11.6], [20.4, 11.6], [11.6, 20.4], [20.4, 20.4]]) add('circle', { cx: x, cy: y, r: 2, fill: 'currentColor' });
+  const wrap = document.createElement('span'); wrap.className = 'logomark'; wrap.append(svg);
+  return wrap;
 }

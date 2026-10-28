@@ -61,7 +61,7 @@ try {
   const token = await page.evaluate(() => localStorage.getItem('tk_token'));
   const cap = await (await fetch(`${DASH}/api/capture`, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ text: readFileSync(join(root, 'fixtures', 'sample-jd.txt'), 'utf8'), url: 'https://j.example/1', hints: { company: 'Acme Payments' } }) })).json();
 
-  await step('sidebar shows AI on', async () => { await page.goto(`${DASH}/#/job/${cap.job.id}`); await page.waitForSelector('.ring'); assert.match(await page.locator('.sidebar').innerText(), /AI on/); });
+  await step('sidebar shows AI on', async () => { await page.goto(`${DASH}/#/job/${cap.job.id}`); await page.waitForSelector('.fit'); assert.match(await page.locator('.sidebar').innerText(), /AI on/); });
 
   await step('AI interview prep: research with sources and coverage, brief, drafted answers', async () => {
     await page.click('.tabs >> text=Interview prep');
@@ -78,7 +78,7 @@ try {
 
   await step('prep is saved: reopening shows it instantly without another run', async () => {
     await page.goto(`${DASH}/#/tracking`); await page.waitForSelector('.board');
-    await page.click('.jcard'); await page.waitForSelector('.ring'); await page.click('.tabs >> text=Interview prep');
+    await page.click('.jcard'); await page.waitForSelector('.fit'); await page.click('.tabs >> text=Interview prep');
     await page.waitForSelector('.oneliner', { timeout: 5000 });
   });
 

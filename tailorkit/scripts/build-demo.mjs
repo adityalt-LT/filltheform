@@ -49,7 +49,7 @@ for (const f of readdirSync(join(root, 'web', 'js'))) {
   src = src.replace(/if \(!confirm\([^)]*\)\) return;\s*/g, ''); // confirm() is blocked inside published previews
   writeFileSync(join(out, 'js', f), src);
 }
-let css = readFileSync(join(root, 'web', 'styles.css'), 'utf8').replace('url("/fonts/', 'url("fonts/');
+let css = readFileSync(join(root, 'web', 'styles.css'), 'utf8').replaceAll('url("/fonts/', 'url("fonts/');
 const dark = /@media \(prefers-color-scheme: dark\) \{\s*:root:not\(\[data-theme="light"\]\) \{([\s\S]*?)\n  \}\n\}/.exec(css);
 if (dark) css += `\n:root[data-theme="dark"] {${dark[1]}\n}\n`;
 css = css.replace(/(:root:not\(\[data-theme="light"\]\) \{)/, '$1\n    color-scheme: dark;');

@@ -63,7 +63,7 @@ export async function trackingView(me, go) {
       const col = h('div', { class: 'col', 'data-status': st,
         ondragover: (e) => { e.preventDefault(); col.classList.add('over'); }, ondragleave: () => col.classList.remove('over'),
         ondrop: (e) => { e.preventDefault(); col.classList.remove('over'); const id = e.dataTransfer.getData('text/plain'); const job = jobs.find((j) => String(j.id) === id); if (job && job.status !== st) move(id, st); } },
-        h('h3', null, h('span', null, STATUS_LABEL[st]), h('b', null, list.filter((j) => j.status === st).length)));
+        h('h3', null, h('span', null, STATUS_LABEL[st]), h('b', null, list.filter((j) => j.status === st).length)), h('div', { class: 'rail', 'aria-hidden': 'true' }));
       for (const j of list.filter((x) => x.status === st)) {
         col.append(h('a', { class: 'jcard', href: `#/job/${j.id}`, draggable: true, ondragstart: (e) => e.dataTransfer.setData('text/plain', String(j.id)) },
           h('div', { class: 'row between', style: 'gap:6px;flex-wrap:nowrap;align-items:flex-start' }, h('div', { class: 't' }, j.title || 'Untitled role'), scorePill(j.match)),

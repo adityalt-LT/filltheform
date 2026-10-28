@@ -30,12 +30,15 @@ export async function jobView(id, me, go) {
   function overview() {
     const m = job.match || {};
     const el = h('div', { class: 'stack' });
+    const band = bandOf(m);
+    const tape = h('div', { class: 'tape', 'aria-hidden': 'true' }, h('div', { class: 'ticks' }), h('div', { class: 'nums' }, [0, 25, 50, 75, 100].map((n) => h('span', { style: `left:${n}%` }, n))), h('i', { class: 'pin', style: `--pct:${m.score ?? 0}` }));
     el.append(h('div', { class: 'card' },
-      h('div', { class: 'row', style: 'gap:20px;flex-wrap:nowrap' },
-        h('div', { class: `ring ${bandOf(m)}`, style: `--pct:${m.score ?? 0}`, 'aria-label': `Match score ${m.score ?? 'unknown'}` }, h('div', null, m.score == null ? '–' : m.score)),
-        h('div', { class: 'grow' },
-          h('h2', { style: 'margin:0' }, { strong: 'Strong match', partial: 'Partial match', weak: 'Weak match', unknown: 'No clear requirements found' }[bandOf(m)]),
-          h('p', { class: 'muted small', style: 'margin:4px 0 0' }, m.note), m.yearsExperience != null && h('p', { class: 'muted small', style: 'margin:2px 0 0' }, `Experience counted: ${m.yearsExperience} yrs`))),
+      h('div', { class: `fit ${band}`, role: 'img', 'aria-label': `Match score ${m.score ?? 'unknown'} out of 100` },
+        h('div', { class: 'num' }, m.score == null ? '–' : m.score, m.score != null && h('sup', null, '%')),
+        h('div', { class: 'words' }, h('div', { class: 'label' }, 'Fit against this job'),
+          h('h2', null, { strong: 'A good fit', partial: 'Needs alterations', weak: 'Not cut for this one', unknown: 'No clear requirements found' }[band]),
+          h('p', null, m.note), m.yearsExperience != null && h('p', { style: 'margin-top:2px' }, `Experience counted: ${m.yearsExperience} yrs`)),
+        m.score != null && tape),
       (m.breakdown?.length > 0) && h('div', { class: 'stack', style: 'margin-top:16px' }, m.breakdown.map((b) => h('div', null,
         h('div', { class: 'row between small' }, h('strong', null, b.label), h('span', { class: 'muted' }, b.detail)),
         h('div', { class: 'bar', role: 'progressbar', 'aria-valuenow': b.points, 'aria-valuemax': b.max }, h('i', { style: `width:${b.max ? Math.round((b.points / b.max) * 100) : 0}%` })))))));
