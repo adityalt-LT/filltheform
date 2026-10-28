@@ -2,7 +2,7 @@
 // requirements. The score is explainable: every point comes from a listed check.
 
 import { findSkills, normalize } from './skills.js';
-import { resumePlainText } from './resume-parse.js';
+import { resumePlainText } from './resume-text.js';
 
 export function profileSkillSet(resume, confirmedSkills = []) {
   const text = resumePlainText(resume);

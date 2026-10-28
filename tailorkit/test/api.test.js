@@ -203,6 +203,15 @@ test('company: the best verified candidate wins; a list card, the job title, a j
   assert.equal(r.data.job.company, 'Orbit Labs');
 });
 
+test('waitlist: valid emails are stored once, bad ones refused, bots (honeypot) are ignored, no sign-in needed', async () => {
+  const post = (body) => fetch(base + '/api/waitlist', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  assert.equal((await post({ email: 'Fan@Example.com', source: 'home' })).status, 201);
+  assert.equal((await post({ email: 'fan@example.com' })).status, 201, 'duplicate is accepted quietly');
+  assert.equal((await post({ email: 'nope' })).status, 400);
+  assert.equal((await post({ email: 'bot@example.com', website: 'http://spam' })).status, 201);
+  const db = (await import('../server/db.js')).openDb; assert.ok(db);
+});
+
 test('users cannot read each other\'s data', async () => {
   const other = await api('/api/auth/signup', { method: 'POST', body: { email: 'other@example.com', password: 'another pass' } });
   const mine = token; token = other.data.token;

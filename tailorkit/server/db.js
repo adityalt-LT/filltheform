@@ -43,6 +43,9 @@ export function openDb(path = 'data/tailorkit.db') {
     CREATE TABLE IF NOT EXISTS job_prep (
       job_id INTEGER PRIMARY KEY REFERENCES jobs(id) ON DELETE CASCADE, data TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
+    CREATE TABLE IF NOT EXISTS waitlist (
+      email TEXT PRIMARY KEY, source TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
     CREATE INDEX IF NOT EXISTS resumes_user ON resumes(user_id, created_at);
     -- One row per job per month: re-tailoring the same job is free, deleting a job does not refund the quota.
     CREATE TABLE IF NOT EXISTS usage (

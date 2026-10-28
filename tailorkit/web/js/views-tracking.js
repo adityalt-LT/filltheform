@@ -10,12 +10,32 @@ export const scorePill = (m) => h('span', { class: `pill ${bandOf(m)}`, title: m
 
 const store = { get: (k, d) => { try { return localStorage.getItem(k) || d; } catch { return d; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch { /* ignore */ } } };
 
+// Paste a job description instead of using the extension: same pipeline (/api/capture), so it is also the quickest way to try the product.
+function addJobPanel(go) {
+  const text = h('textarea', { rows: 8, placeholder: 'Paste the full job description here…', 'aria-label': 'Job description' });
+  const url = h('input', { type: 'text', placeholder: 'Link to the posting (optional)', 'aria-label': 'Posting link' });
+  const err = h('div', { class: 'error', hidden: true, role: 'alert' });
+  const btn = h('button', { class: 'btn primary', onclick: async () => {
+    err.hidden = true; btn.disabled = true;
+    try {
+      const r = await api('/api/capture', { method: 'POST', body: { text: text.value, url: url.value.trim(), source: 'pasted' } });
+      toast(r.quotaExceeded ? 'Saved and scored. You have used this month’s free tailored resumes.' : 'Job added with a tailored resume');
+      go(`#/job/${r.job.id}`);
+    } catch (e) { err.textContent = e.message; err.hidden = false; btn.disabled = false; }
+  } }, 'Add job');
+  return h('div', { class: 'card', id: 'add-job', hidden: true, style: 'margin-bottom:20px' },
+    h('div', { class: 'cardhead' }, h('div', null, h('h2', null, 'Add a job'), h('p', null, 'Paste the description. We score it against your resume and create a tailored version.'))),
+    h('div', { class: 'stack' }, text, url, err, h('div', { class: 'row' }, btn, h('button', { class: 'btn ghost', onclick: () => { document.getElementById('add-job').hidden = true; } }, 'Cancel'))));
+}
+const toggleAdd = () => { const el = document.getElementById('add-job'); el.hidden = !el.hidden; if (!el.hidden) el.querySelector('textarea').focus(); };
+
 export async function trackingView(me, go) {
   const { jobs, statuses } = await api('/api/jobs');
   const host = h('div');
+  const addBtn = h('button', { class: 'btn primary', onclick: toggleAdd }, icon('plus', 16), 'Add job');
   if (!jobs.length) {
-    host.append(pageHead('Tracking', 'Every job you capture shows up here with a match score and a tailored resume.'),
-      emptyState(icon('board', 22), 'No jobs yet', 'Open any job page or LinkedIn hiring post, click the extension and capture it.', h('a', { class: 'btn primary', href: '#/settings' }, 'Install the extension')),
+    host.append(pageHead('Tracking', 'Every job you capture shows up here with a match score and a tailored resume.', addBtn), addJobPanel(go),
+      emptyState(icon('board', 22), 'No jobs yet', 'Paste a job description, or open any job page or LinkedIn hiring post and capture it with the extension.', h('button', { class: 'btn primary', onclick: toggleAdd }, 'Paste a job description'), h('a', { class: 'btn', href: '#/settings' }, 'Install the extension')),
       h('div', { class: 'card', style: 'max-width:640px;margin:16px auto 0' }, h('h2', null, 'How it works'), EXT_STEPS()));
     return host;
   }
@@ -68,7 +88,7 @@ export async function trackingView(me, go) {
   }
 
   function draw() { clear(body); const list = visible(); body.append(view === 'board' ? board(list) : table(list)); }
-  host.append(pageHead('Tracking', 'Every job you capture, with its match score and tailored resume.', h('a', { class: 'btn', href: '#/settings' }, icon('puzzle', 15), 'Extension help')),
+  host.append(pageHead('Tracking', 'Every job you capture, with its match score and tailored resume.', h('a', { class: 'btn', href: '#/settings' }, icon('puzzle', 15), 'Extension help'), addBtn), addJobPanel(go),
     h('div', { class: 'kpis' }, kpi('Jobs tracked', String(jobs.length), `${jobs.filter((j) => j.resumes.length).length} with a tailored resume`), kpi('Applied', String(applied), 'moved past Saved'), kpi('In conversation', String(interviews), 'screening, interview or offer'), kpi('Average match', avg == null ? '–' : `${avg}%`, 'across scored jobs')),
     h('div', { class: 'toolbar' }, h('div', { class: 'search' }, icon('search'), search), filter, h('div', { class: 'grow' }), seg), body);
   draw();

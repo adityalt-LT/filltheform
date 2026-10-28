@@ -152,6 +152,15 @@ export function createApp({ dbPath = process.env.DB_PATH || 'data/tailorkit.db',
     res.json({ user: { email: req.user.email, plan: req.user.plan }, quota: quota(req.user), hasResume: !!p, aiEnabled: aiEnabled(), aiModel: aiEnabled() ? aiModel() : null, aiError: aiLastError() });
   });
 
+  // ---------- waitlist (used by the marketing website; set ALLOWED_ORIGINS to the site's origin)
+  app.post('/api/waitlist', authLimit, (req, res) => {
+    if (req.body?.website) return res.status(201).json({ ok: true }); // honeypot: bots fill hidden fields; pretend success
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || email.length > 200) throw httpError(400, 'Enter a valid email address.');
+    db.prepare('INSERT OR IGNORE INTO waitlist (email, source) VALUES (?, ?)').run(email, String(req.body?.source || '').slice(0, 40));
+    res.status(201).json({ ok: true });
+  });
+
   // ---------- profile
   app.post('/api/profile/resume', auth, upload.single('file'), async (req, res) => {
     if (!req.file) throw httpError(400, 'Choose a resume file (PDF, DOCX or TXT).');

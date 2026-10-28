@@ -1,6 +1,7 @@
 import { h } from './dom.js';
 import { api, setToken } from './api.js';
 import { icon } from './icons.js';
+import { BRAND } from '../brand.js';
 
 const point = (title, text) => h('li', null, h('span', { class: 'iconbox', style: 'margin:0;width:32px;height:32px;background:rgba(255,255,255,.16);color:#fff;border-radius:8px' }, icon('check', 16)), h('div', null, h('div', { style: 'font-weight:600' }, title), h('div', { style: 'opacity:.85;font-size:13.5px' }, text)));
 
@@ -20,7 +21,7 @@ export function authView(onDone) {
     } }, h('label', { class: 'field' }, 'Email', email), h('label', { class: 'field' }, 'Password', pass), err, btn);
     host.append(
       h('div', { class: 'authform' }, h('div', { class: 'auth' },
-        h('div', { class: 'logo', style: 'padding-left:0;padding-bottom:28px' }, h('i', null, 'T'), 'Tailor & Apply'),
+        h('div', { class: 'logo', style: 'padding-left:0;padding-bottom:28px' }, h('i', null, BRAND.mark), BRAND.name),
         h('h1', null, mode === 'signup' ? 'Create your account' : 'Welcome back'),
         h('p', { class: 'sub' }, mode === 'signup' ? 'Start tailoring your resume to every job in minutes.' : 'Sign in to continue to your workspace.'),
         form,

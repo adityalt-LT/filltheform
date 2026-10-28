@@ -1,7 +1,7 @@
 // Validation for client-supplied resume JSON. The editor sends the whole model back,
 // so every field is clamped and typed before it is stored or rendered.
 
-import { randomUUID } from 'node:crypto';
+const randomUUID = () => globalThis.crypto.randomUUID();
 
 const MAX = { short: 200, text: 1800, items: 60, bullets: 40, skills: 80, sections: 20, headerLines: 8 };
 const KINDS = new Set(['summary', 'experience', 'education', 'skills', 'projects', 'list']);

@@ -7,7 +7,12 @@
     "dev": "node --watch server/index.js",
     "test": "node --no-warnings --test --test-reporter=spec test/*.test.js",
     "e2e": "node --no-warnings test/e2e/run.mjs",
-    "e2e:ai": "node --no-warnings test/e2e/ai.mjs"
+    "e2e:ai": "node --no-warnings test/e2e/ai.mjs",
+    "brand": "node scripts/apply-brand.mjs",
+    "demo:build": "node scripts/build-demo.mjs",
+    "e2e:demo": "node --no-warnings test/e2e/demo.mjs",
+    "site:build": "node site/build.mjs",
+    "e2e:site": "node --no-warnings test/e2e/site.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.135.0",

@@ -2,7 +2,7 @@
 
 import { findSkills } from './skills.js';
 import { estimateYears } from './match.js';
-import { resumePlainText } from './resume-parse.js';
+import { resumePlainText } from './resume-text.js';
 
 const EMAIL = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i;
 const isPhone = (p) => { const d = p.replace(/\D/g, ''); return d.length >= 8 && d.length <= 15 && /^[+\d\s().-]+$/.test(p); };

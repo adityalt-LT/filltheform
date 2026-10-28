@@ -2,6 +2,21 @@
 
 Status: draft for review. Written from what the product does today. Anything marked **verify** depends on current law, pricing or platform rules that I could not check from here. Treat legal and tax points as questions for a lawyer and a CA, not advice.
 
+## 0. Execution status (updated 28 Oct 2026)
+
+| Item | Status |
+|---|---|
+| Product name | Shortlist and checks in `naming.md`. **You decide**; Darzi is the recommended first check |
+| Marketing website | Built in `site/` (preview and production builds, tests). Needs your domain, hosting and real company details |
+| Free linkable tool | Keyword checker built into the site |
+| Authority and SEO plan | `seo-and-authority.md` |
+| Waitlist | Endpoint `POST /api/waitlist` and form on the site; needs the app deployed |
+| Dashboard demo | `npm run demo:build`; published as a preview for testing |
+| Testing guide | `testing-guide.md` |
+| Domain, hosting, Razorpay, GST, entity, Chrome Web Store, legal review | **Only you can do these** |
+| Real AI run and cost per prep | Not done: needs your API key |
+
+
 ## 1. Where you are today (honest snapshot)
 
 | Area | Today | Needed before charging money |
