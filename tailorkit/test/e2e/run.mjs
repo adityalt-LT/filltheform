@@ -173,6 +173,7 @@ try {
     const titles = await dash.locator('.jcard .t').allInnerTexts();
     for (const t of ['Senior Backend Engineer', 'Product Analyst', 'Product Management Intern', 'Product Manager II']) assert.ok(titles.includes(t), `${t} in ${titles}`);
     await shot(dash, '05-board');
+    await dash.click('.seg >> text=Table'); await dash.waitForSelector('table.t'); await shot(dash, '05b-table'); await dash.click('.seg >> text=Board'); await dash.waitForSelector('.board');
     await assertClean(dash, 'tracking');
     const cos = await dash.locator('.jcard:has-text("Product Manager II") .c').allInnerTexts();
     assert.ok(cos.length >= 2 && cos.every((c) => c === 'Kuku'), `company shown on the cards was ${JSON.stringify(cos)}`);
