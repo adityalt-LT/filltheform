@@ -1,6 +1,6 @@
 import { h } from './dom.js';
 import { api, setToken } from './api.js';
-import { logoMark } from './icons.js';
+import { brandLogo } from './logo.js';
 import { BRAND } from '../brand.js';
 
 export function authView(onDone) {
@@ -19,7 +19,7 @@ export function authView(onDone) {
     } }, h('label', { class: 'field' }, 'Email', email), h('label', { class: 'field' }, 'Password', pass), err, btn);
     const switchMode = h('a', { href: '#', onclick: (e) => { e.preventDefault(); mode = mode === 'signup' ? 'login' : 'signup'; render(); } }, mode === 'signup' ? 'Sign in' : 'Create an account');
     const left = h('div', { class: 'authform' }, h('div', { class: 'auth' },
-      h('div', { class: 'logo', style: 'padding-bottom:36px' }, logoMark(), BRAND.name),
+      h('div', { class: 'logo', style: 'padding-bottom:36px' }, brandLogo({ height: 38, label: BRAND.name })),
       h('h1', null, mode === 'signup' ? 'Create your account' : 'Welcome back'),
       h('p', { class: 'sub' }, mode === 'signup' ? 'Free. No card needed.' : 'Sign in to continue.'),
       form,

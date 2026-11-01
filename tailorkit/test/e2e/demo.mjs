@@ -33,6 +33,17 @@ await step('opens signed in on the board with six sample jobs', async () => {
   assert.ok(await page.locator('.demo-pill').isVisible());
   await shot('board');
 });
+await step('logo animates on a fresh load, stays still when moving between pages, and plays again on refresh', async () => {
+  const anims = () => page.evaluate(() => document.querySelector('.nav .logo svg').getAnimations({ subtree: true }).length);
+  await page.reload(); await page.waitForSelector('.nav .logo svg');
+  assert.ok(await anims() > 0, 'plays on load');
+  await page.waitForTimeout(3600);
+  await page.click('.navtabs >> text=Resumes'); await page.waitForSelector('.navitem.active:has-text("Resumes")');
+  assert.equal(await anims(), 0, 'no replay when navigating inside the app');
+  await page.goto(`${base}#d-tracking`); await page.reload(); await page.waitForSelector('.nav .logo svg');
+  assert.ok(await anims() > 0, 'plays again after a refresh');
+  await page.waitForSelector('.jcard');
+});
 await step('job page shows a real match score and gaps', async () => {
   await page.locator('.jcard', { hasText: 'Acme Payments' }).click();
   await page.waitForSelector('h1:has-text("Senior Backend Engineer")');

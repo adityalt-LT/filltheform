@@ -4,7 +4,7 @@
 * { box-sizing: border-box; }
 body { width: 340px; margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.5 ui-sans-serif, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
 .wrap { padding: 16px; } h1 { font-size: 16px; margin: 0 0 8px; font-weight: 600; }
-.brand { display: flex; align-items: center; gap: 8px; font-weight: 650; } .brand::before { content: "T"; width: 22px; height: 22px; border-radius: 6px; background: var(--ink); color: var(--bg); display: grid; place-items: center; font-weight: 700; font-size: 13px; } .brand span { font-weight: 650; }
+.brand { display: flex; align-items: center; gap: 8px; font-weight: 650; } .brand::before { content: ""; width: 22px; height: 22px; background: url(icons/32.png) center / contain no-repeat; } .brand span { font-weight: 650; }
 .muted { color: var(--muted); } .small { font-size: 12px; }
 button, input { font: inherit; } input { width: 100%; padding: 9px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); color: var(--ink); margin-top: 4px; } input:focus { outline: none; border-color: var(--muted); box-shadow: 0 0 0 3px var(--line); }
 label { display: block; font-size: 12px; font-weight: 500; color: var(--muted); margin-top: 10px; }

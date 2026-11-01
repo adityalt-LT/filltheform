@@ -18,6 +18,11 @@ const reveal = () => page.evaluate(() => document.querySelectorAll('.reveal,.spl
 const scrollTo = async (sel) => { await page.evaluate((s) => document.querySelector(s).scrollIntoView({ block: 'center', behavior: 'instant' }), sel); await page.waitForTimeout(500); };
 
 await page.goto('file://' + file); await page.waitForTimeout(1200);
+await step('nav logo plays on load and again after a refresh', async () => {
+  const anims = () => page.evaluate(() => document.querySelector('nav.top .logo svg').getAnimations({ subtree: true }).length);
+  assert.ok(await anims() > 0, 'plays on load');
+  await page.reload(); await page.waitForTimeout(600); assert.ok(await anims() > 0, 'plays again after refresh');
+});
 await step('hero headline reveals word by word', async () => { assert.equal(await page.locator('h1 .w').count(), 4); await shot('hero'); });
 await step('hero demo: cursor clicks, post flies, ring counts to 82', async () => {
   await page.locator('#stage').hover(); await page.waitForTimeout(3200); await shot('hero-run');

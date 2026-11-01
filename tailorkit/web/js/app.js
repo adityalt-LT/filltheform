@@ -1,6 +1,7 @@
 import { h, clear, spinner, toast } from './dom.js';
 import { api, getToken, setToken } from './api.js';
-import { icon, logoMark } from './icons.js';
+import { icon } from './icons.js';
+import { brandLogo } from './logo.js';
 import { BRAND } from '../brand.js';
 import { authView } from './views-auth.js';
 import { welcomeView, profileView, masterEditorView } from './views-profile.js';
@@ -34,7 +35,7 @@ function shell(page, main) {
   const wrap = h('div', { style: 'position:relative' }, avatar);
   const active = TAB_OF[page] || '';
   const nav = h('header', { class: 'nav' }, h('div', { class: 'nav-in' },
-    h('a', { class: 'logo', href: '#/tracking' }, logoMark(), BRAND.name),
+    h('a', { class: 'logo', href: '#/tracking', 'aria-label': `${BRAND.name} home` }, brandLogo({ height: 32, label: BRAND.name })),
     h('nav', { class: 'navtabs', 'aria-label': 'Main' }, TABS.map(([href, label]) => h('a', { href, class: `navitem ${href === active ? 'active' : ''}` }, label))),
     h('div', { class: 'nav-actions' }, me.aiEnabled && h('span', { class: 'ai-badge' }, icon('sparkle'), 'AI on'),
       h('button', { class: 'btn primary sm', onclick: () => requestAdd(go) }, icon('plus', 15), 'Add job'), wrap)));
