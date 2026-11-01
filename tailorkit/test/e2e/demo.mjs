@@ -44,13 +44,16 @@ await step('logo animates on a fresh load, stays still when moving between pages
   assert.ok(await anims() > 0, 'plays again after a refresh');
   await page.waitForSelector('.jcard');
 });
-await step('clicking the logo plays the animation again, on Jobs and from another page', async () => {
+await step('hovering the logo plays the animation again; clicking only navigates', async () => {
   const anims = () => page.evaluate(() => document.querySelector('.nav .logo svg').getAnimations({ subtree: true }).filter((a) => a.playState === 'running').length);
-  await page.waitForTimeout(3600); assert.equal(await anims(), 0);
-  await page.click('.nav .logo'); assert.ok(await anims() > 0, 'replays when already on Jobs');
-  await page.waitForTimeout(3600); await page.click('.navtabs >> text=Skills'); await page.waitForSelector('.navitem.active:has-text("Skills")'); await page.waitForTimeout(3600);
-  assert.equal(await anims(), 0);
-  await page.click('.nav .logo'); await page.waitForSelector('.jcard'); assert.ok(await anims() > 0, 'replays and returns to Jobs from another page');
+  await page.mouse.move(600, 400); await page.waitForTimeout(3600); assert.equal(await anims(), 0, 'finished');
+  await page.hover('.nav .logo'); await page.waitForTimeout(200); assert.ok(await anims() > 0, 'hover replays it');
+  await page.waitForTimeout(3600); await page.mouse.move(600, 400);
+  await page.click('.navtabs >> text=Skills'); await page.waitForSelector('.navitem.active:has-text("Skills")'); await page.waitForTimeout(3600);
+  assert.equal(await anims(), 0, 'moving between pages does not replay');
+  await page.hover('.nav .logo'); await page.waitForTimeout(200); assert.ok(await anims() > 0, 'hover replays it on another page');
+  await page.waitForTimeout(3600); await page.mouse.move(600, 400); await page.click('.nav .logo'); await page.waitForSelector('.jcard');
+  await page.mouse.move(600, 400); await page.waitForTimeout(3600); assert.equal(await anims(), 0, 'static after arriving');
 });
 await step('job page shows a real match score and gaps', async () => {
   await page.locator('.jcard', { hasText: 'Acme Payments' }).click();

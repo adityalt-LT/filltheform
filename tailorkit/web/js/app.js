@@ -1,7 +1,7 @@
 import { h, clear, spinner, toast } from './dom.js';
 import { api, getToken, setToken } from './api.js';
 import { icon } from './icons.js';
-import { brandLogo, armLogo, replayLogo } from './logo.js';
+import { brandLogo, armLogo, replayLogo, logoPlaying } from './logo.js';
 import { BRAND } from '../brand.js';
 import { authView } from './views-auth.js';
 import { welcomeView, profileView, masterEditorView } from './views-profile.js';
@@ -35,10 +35,11 @@ function shell(page, main) {
   const wrap = h('div', { style: 'position:relative' }, avatar);
   const active = TAB_OF[page] || '';
   const nav = h('header', { class: 'nav' }, h('div', { class: 'nav-in' },
-    h('a', { class: 'logo', href: '#/tracking', 'aria-label': `${BRAND.name} home`, onclick: (e) => {
-      // Replay the animation. If we are already on Jobs nothing re-draws, so restart it in place; otherwise it plays on the new page.
-      if (!location.hash || location.hash === '#/tracking') { e.preventDefault(); replayLogo(e.currentTarget.querySelector('svg')); } else armLogo();
-    } }, brandLogo({ height: 32, label: BRAND.name })),
+    h('a', { class: 'logo', href: '#/tracking', 'aria-label': `${BRAND.name} home`, // Hover (or keyboard focus) plays the logo again, unless it is already playing. Clicking just goes to Jobs.
+      onmouseenter: (e) => { const svg = e.currentTarget.querySelector('svg'); if (svg && !logoPlaying(svg)) replayLogo(svg); },
+      onfocus: (e) => { const svg = e.currentTarget.querySelector('svg'); if (svg && !logoPlaying(svg)) replayLogo(svg); },
+      onclick: (e) => { const svg = e.currentTarget.querySelector('svg'); if (svg && logoPlaying(svg)) armLogo(); },
+    }, brandLogo({ height: 32, label: BRAND.name })),
     h('nav', { class: 'navtabs', 'aria-label': 'Main' }, TABS.map(([href, label]) => h('a', { href, class: `navitem ${href === active ? 'active' : ''}` }, label))),
     h('div', { class: 'nav-actions' }, me.aiEnabled && h('span', { class: 'ai-badge' }, icon('sparkle'), 'AI on'),
       h('button', { class: 'btn primary sm', onclick: () => requestAdd(go) }, icon('plus', 15), 'Add job'), wrap)));

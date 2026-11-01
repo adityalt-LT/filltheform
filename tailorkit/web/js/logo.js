@@ -13,11 +13,12 @@ export function brandLogo({ height = 30, animate = !played, label = 'Rolemate' }
   return document.importNode(doc.documentElement, true);
 }
 
-// Clicking the logo plays it again. Call armLogo() before a navigation that rebuilds the top bar, so the new logo animates;
-// call replayLogo(node) to restart the one already on screen.
+// Hovering the logo plays it again (see app.js). armLogo() makes the next logo animate, for a navigation that rebuilds the top bar
+// while the animation is running; replayLogo(node) restarts the one already on screen; logoPlaying(node) tells whether it is mid-animation.
 export const armLogo = () => { played = false; };
 export function replayLogo(node) {
   const fresh = brandLogo({ height: Number(node.getAttribute('height')) || 30, animate: true, label: node.getAttribute('aria-label') || 'Rolemate' });
   node.replaceWith(fresh);
   return fresh;
 }
+export const logoPlaying = (node) => node.getAnimations({ subtree: true }).some((a) => a.playState === 'running');
