@@ -19,7 +19,7 @@ await new Promise((r) => server.listen(0, r));
 const base = `http://127.0.0.1:${server.address().port}/`;
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || '/opt/pw-browsers/chromium', args: ['--no-sandbox'] });
 const page = await browser.newPage({ viewport: { width: 1280, height: 860 } });
-const errors = []; page.on('pageerror', (e) => errors.push(e.message)); page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+const errors = []; page.on('pageerror', (e) => errors.push(e.message)); page.on('console', (m) => { if (m.type() === 'error') { errors.push(m.text()); console.log('console error:', m.text(), m.location().url); } });
 const shot = async (n) => { await page.evaluate(() => document.querySelectorAll('.reveal').forEach((e) => e.classList.add('in'))); await page.waitForTimeout(900); if (SHOTS) await page.screenshot({ path: join(SHOTS, `site-${n}.png`), fullPage: n !== 'home-top' }); };
 const step = async (name, fn) => { try { await fn(); console.log('✔', name); } catch (e) { console.log('✘', name, '\n  ', e.message.split('\n')[0]); process.exitCode = 1; } };
 

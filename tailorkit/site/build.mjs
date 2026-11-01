@@ -95,7 +95,7 @@ export async function buildSite({ mode = 'preview', out = join(here, 'dist'), de
   cpSync(join(here, 'assets', 'checker.js'), join(out, 'assets', 'checker.js'));
   cpSync(join(root, 'web', 'icon.png'), join(out, 'assets', 'icon.png'));
   for (const f of ['shot-job.jpg', 'shot-board.jpg']) if (existsSync(join(here, 'assets', f))) cpSync(join(here, 'assets', f), join(out, 'assets', f));
-  cpSync(join(root, 'web', 'fonts'), join(out, 'assets', 'fonts'), { recursive: true });
+  cpSync(join(here, 'assets', 'fonts'), join(out, 'assets', 'fonts'), { recursive: true });
   cpSync(join(root, 'server', 'lib', 'skills.js'), join(out, 'assets', 'lib', 'skills.js'));
   cpSync(join(root, 'server', 'lib', 'jd-basic.js'), join(out, 'assets', 'lib', 'jd-basic.js'));
 
