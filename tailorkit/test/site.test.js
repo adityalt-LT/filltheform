@@ -54,7 +54,7 @@ for (const mode of ['preview', 'production']) {
 }
 
 test('production build refuses placeholder company details', async () => {
-  assert.ok(placeholderProblems(BRAND).length >= 4);
+  assert.ok(placeholderProblems(BRAND).length >= 2, 'company name and address are still placeholders');
   await assert.rejects(buildSite({ mode: 'production', out: mkdtempSync(join(tmpdir(), 'site-')) }), /placeholder/);
 });
 

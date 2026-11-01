@@ -11,6 +11,7 @@ import { tailorResume } from '../server/lib/tailor-core.js';
 import { buildBasicPrep } from '../server/lib/prep-basic.js';
 import { parseWarnings } from '../server/lib/resume-parse.js';
 import { DEMO_JOBS } from '../demo/jobs.mjs';
+import { BRAND } from '../web/brand.js';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const out = join(root, 'demo', 'dist');
@@ -68,7 +69,7 @@ cpSync(join(root, 'demo', 'mock-api.js'), join(out, 'js', 'api.js'));
 const pill = `<div class="demo-pill" role="note"><span>Demo with sample data. Nothing is saved or sent. AI replies are scripted.</span><button id="demo-reset" type="button">Reset</button></div>
 <script type="module">import { resetDemo } from './js/api.js'; document.getElementById('demo-reset').addEventListener('click', () => { resetDemo(); location.hash = '#d-tracking'; location.reload(); });</script>`;
 const body = `<div id="app"></div>\n<div id="toasts" aria-live="polite"></div>\n${pill}\n<script type="module" src="js/app.js"></script>`;
-const title = 'Tailor and Apply Demo';
+const title = `${BRAND.name} Demo`;
 writeFileSync(join(out, 'index.html'), `<!doctype html>\n<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${title}</title><link rel="icon" type="image/png" href="icon.png"><link rel="stylesheet" href="styles.css"></head><body>\n${body}\n</body></html>\n`);
 writeFileSync(join(out, 'artifact.html'), `<title>${title}</title>\n<meta name="claude:viewport-fit-sides" content="cover">\n<link rel="stylesheet" href="styles.css">\n${body}\n`);
 console.log(`Demo built in ${out}`);

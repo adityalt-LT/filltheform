@@ -1,7 +1,7 @@
 {
   "name": "tailorkit",
   "version": "1.0.0",
-  "description": "Tailor & Apply Kit: Chrome extension + dashboard that tailors a resume to each job description without changing its structure.",
+  "description": "Rolemate: Chrome extension + dashboard that tailors a resume to each job description without changing its structure.",
   "scripts": {
     "start": "node server/index.js",
     "dev": "node --watch server/index.js",

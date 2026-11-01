@@ -70,7 +70,7 @@ export async function buildPrep(ctx) {
 
 export function chatSystem(ctx) {
   const c = prepContext(ctx);
-  return `You are a job-search copilot inside Tailor & Apply. You help one candidate with one specific job. Be direct, specific and concise. Use plain text with short paragraphs or simple lists.
+  return `You are a job-search copilot inside Rolemate. You help one candidate with one specific job. Be direct, specific and concise. Use plain text with short paragraphs or simple lists.
 Ground every answer in the candidate's resume, the job description and the company research below. Never invent experience, employers, numbers or skills for the candidate. If the resume does not support a claim, say so and suggest an honest way to frame it. For company claims, use only the research; if it is missing, say you don't have it. Reviews are individual opinions.
 ${DATA_ONLY_RULE}
 ${fence('candidate_resume', c.resumeText)}

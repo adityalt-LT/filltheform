@@ -1,4 +1,4 @@
-# Tailor & Apply: launch plan
+# Rolemate: launch plan
 
 Status: draft for review. Written from what the product does today. Anything marked **verify** depends on current law, pricing or platform rules that I could not check from here. Treat legal and tax points as questions for a lawyer and a CA, not advice.
 

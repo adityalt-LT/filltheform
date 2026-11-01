@@ -1,6 +1,6 @@
 # Product name
 
-**Current working name:** Tailor & Apply. It describes the product, but it is long, hard to turn into a domain, and unlikely to be ownable (generic words are hard to protect and hard to rank for).
+**Chosen name:** Rolemate (domain `rolemate.in`). The earlier working name, Tailor & Apply, was long and generic.
 
 **Important:** I could not check domain availability, trademarks or existing products from here. Everything below is a shortlist to *test*, not a cleared name. Do the checks in section 4 before you spend money or announce anything.
 
@@ -33,7 +33,7 @@ Scores are my judgement from 1 (weak) to 5 (strong) on the criteria I can assess
 2. **Naap** if Darzi is unavailable or too generic: shorter, more ownable in search, same metaphor.
 3. **Tailorly** only as a fallback if you need a name that works with no explanation at all.
 
-Keep **Tailor & Apply** as the working name until a name clears the checks. It is one line to change (section 5).
+The name is set in `web/brand.js`. Still to do: check trademark classes 9, 35, 41 and 42 and the Chrome Web Store for conflicts (section 4).
 
 ## 4. Checks before you commit (about an hour, mostly free)
 

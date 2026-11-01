@@ -1,5 +1,5 @@
 // Capture runs only when the user clicks the button; the page text is read from the active tab
-// (activeTab permission) and sent to the user's own Tailor & Apply server.
+// (activeTab permission) and sent to the user's own Rolemate server.
 'use strict';
 
 const DEFAULT_SERVER = 'http://localhost:3000';
@@ -18,14 +18,14 @@ function el(tag, props = {}, ...kids) {
   for (const kid of kids.flat()) if (kid !== false && kid != null) e.append(kid instanceof Node ? kid : document.createTextNode(kid));
   return e;
 }
-const show = (...nodes) => { root.replaceChildren(el('div', { class: 'wrap' }, el('div', { class: 'brand' }, 'Tailor & Apply'), ...nodes)); };
+const show = (...nodes) => { root.replaceChildren(el('div', { class: 'wrap' }, el('div', { class: 'brand' }, 'Rolemate'), ...nodes)); };
 
 async function callApi(path, { method = 'GET', body } = {}) {
   const { server, token } = await store.get();
   let res;
   try {
     res = await fetch(server.replace(/\/$/, '') + path, { method, headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(body ? { 'Content-Type': 'application/json' } : {}) }, body: body ? JSON.stringify(body) : undefined });
-  } catch { throw Object.assign(new Error(`Can't reach ${server}. Is the Tailor & Apply server running?`), { network: true }); }
+  } catch { throw Object.assign(new Error(`Can't reach ${server}. Is the Rolemate server running?`), { network: true }); }
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw Object.assign(new Error(data.error || `Request failed (${res.status})`), { status: res.status, data });
   return data;

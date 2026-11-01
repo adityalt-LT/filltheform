@@ -1,4 +1,4 @@
-# Tailor & Apply Kit
+# Rolemate
 
 A Chrome extension plus a dashboard (same login) that helps a candidate apply with a resume that fits each job, without changing the resume's own structure.
 

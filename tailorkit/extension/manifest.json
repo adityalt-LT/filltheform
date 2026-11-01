@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Tailor & Apply",
+  "name": "Rolemate",
   "version": "0.1.0",
   "description": "Capture a job page, see how well your resume matches, and get a tailored resume PDF.",
   "action": {
