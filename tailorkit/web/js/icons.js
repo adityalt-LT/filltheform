@@ -21,6 +21,7 @@ const P = {
   puzzle: [['path', { d: 'M10 4a2 2 0 1 1 4 0v1h3a1 1 0 0 1 1 1v3h-1a2 2 0 1 0 0 4h1v3a1 1 0 0 1-1 1h-3v-1a2 2 0 1 0-4 0v1H7a1 1 0 0 1-1-1v-3h1a2 2 0 1 0 0-4H6V6a1 1 0 0 1 1-1h3z' }]],
   card: [['rect', { x: 2, y: 5, width: 20, height: 14, rx: 2 }], ['path', { d: 'M2 10h20' }]],
   chevron: [['path', { d: 'M6 9l6 6 6-6' }]],
+  plus: [['path', { d: 'M12 5v14M5 12h14' }]],
   menu: [['path', { d: 'M4 6h16M4 12h16M4 18h16' }]],
 };
 export function icon(name, size) {

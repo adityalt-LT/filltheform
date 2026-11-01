@@ -2,7 +2,7 @@ import { h, toast, clear, append, spinner } from './dom.js';
 import { api, apiText } from './api.js';
 import { icon } from './icons.js';
 import { resumeEditor } from './editor.js';
-import { pageHead, stepper } from './ui.js';
+import { pageHead, stepper, nextStep } from './ui.js';
 
 export const EXT_STEPS = () => h('ol', { class: 'steps' },
   h('li', null, h('div', null, 'Open ', h('code', null, 'chrome://extensions'), ' and switch on ', h('strong', null, 'Developer mode'), '.')),
@@ -15,7 +15,7 @@ function dropzone(onFile) {
     onclick: () => input.click(), onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); } },
     ondragover: (e) => { e.preventDefault(); zone.classList.add('over'); }, ondragleave: () => zone.classList.remove('over'),
     ondrop: (e) => { e.preventDefault(); zone.classList.remove('over'); e.dataTransfer.files[0] && onFile(e.dataTransfer.files[0]); } },
-    icon('upload'), h('div', null, h('strong', null, 'Drop your resume here'), ' or click to browse'), h('div', { class: 'muted small', style: 'margin-top:4px' }, 'PDF, DOCX or TXT · up to 5 MB'), input);
+    icon('upload'), h('strong', null, 'Drop your resume here'), h('div', { class: 'muted' }, 'or click to choose a file'), h('div', { class: 'faint small', style: 'margin-top:10px' }, 'PDF, DOCX or TXT'), input);
   return zone;
 }
 
@@ -38,20 +38,20 @@ export { profileSummary };
 function compareDetails({ originalText }) {
   const frame = h('iframe', { title: 'Rebuilt resume', sandbox: '' });
   apiText('/api/profile/html').then((t) => { frame.srcdoc = t; }).catch(() => {});
-  return h('details', { class: 'card soft' }, h('summary', { class: 'row between' }, h('span', null, h('strong', null, 'Check how we rebuilt your resume'), h('span', { class: 'muted small' }, '  (optional)')), icon('list')),
-    h('p', { class: 'muted small' }, 'Your section order and headings are kept. Fonts and columns are rebuilt in a clean, parser-friendly layout.'),
+  return h('details', { class: 'card soft' }, h('summary', { class: 'row between' }, h('span', null, h('strong', null, 'See how we read it')), icon('list')),
+    
     h('div', { class: 'compare' }, h('div', null, h('h3', null, 'What we read'), h('pre', { class: 'jd' }, originalText)), h('div', null, h('h3', null, 'Rebuilt'), frame)));
 }
 
 export async function welcomeView(me, go) {
   const host = h('div', { class: 'welcome' });
-  const steps = ['Reading your resume', 'Finding your skills and experience', 'Building your profile'];
+  const steps = ['Reading your resume', 'Finding your skills', 'Building your profile'];
   const show = (...kids) => { clear(host); append(host, ...kids); };
 
   const showUpload = () => show(
     stepper(0),
-    h('h1', null, 'Let’s start with your resume'),
-    h('p', { class: 'sub' }, 'That’s all we need. We’ll build your profile from it, so there’s nothing to fill in.'),
+    h('h1', null, 'Upload your resume'),
+    h('p', { class: 'sub' }, 'We build your profile from it.'),
     dropzone(async (file) => {
       const lines = steps.map((t) => h('div', { class: 'stepline' }, h('span', { class: 'spin' }), t));
       show(stepper(0), h('h1', null, 'Reading your resume…'), h('div', { class: 'progress' }, lines));
@@ -64,13 +64,13 @@ export async function welcomeView(me, go) {
 
   const showReview = (r) => show(
     stepper(1),
-    h('h1', null, 'Here’s what we found'),
-    h('p', { class: 'sub' }, 'Does this look right? You can fix anything later in your profile.'),
+    h('h1', null, 'Does this look right?'),
+    h('p', { class: 'sub' }, 'You can fix anything later.'),
     r.warnings.length > 0 && h('div', { class: 'notice', style: 'text-align:left;margin-bottom:14px' }, r.warnings.join(' ')),
     profileSummary(r.derived),
     h('div', { style: 'margin:14px 0;text-align:left' }, compareDetails(r)),
     h('div', { class: 'row', style: 'justify-content:center' },
-      h('button', { class: 'btn primary lg', onclick: () => { me.hasResume = true; go('#/tracking'); } }, 'Looks good, continue'),
+      h('button', { class: 'btn primary lg', onclick: () => { me.hasResume = true; go('#/tracking'); } }, 'Looks good'),
       h('button', { class: 'btn lg', onclick: () => { me.hasResume = true; go('#/profile/resume'); } }, 'Fix details')));
 
   showUpload();
@@ -94,20 +94,20 @@ export async function profileView(me, go) {
   };
   const reupload = dropzone(async (file) => {
     clear(host); host.append(spinner('Reading your resume…'));
-    try { const r = await upload(file); clear(host); host.append(h('div', { class: 'welcome', style: 'margin-top:0' }, h('h1', null, 'Here’s what we found'), profileSummary(r.derived), h('div', { class: 'row', style: 'justify-content:center;margin-top:16px' }, h('button', { class: 'btn primary lg', onclick: () => go('#/tracking') }, 'Looks good')))); }
+    try { const r = await upload(file); clear(host); host.append(h('div', { class: 'welcome', style: 'margin-top:0' }, h('h1', null, 'Does this look right?'), profileSummary(r.derived), h('div', { class: 'row', style: 'justify-content:center;margin-top:16px' }, h('button', { class: 'btn primary lg', onclick: () => go('#/tracking') }, 'Looks good')))); }
     catch (e) { toast(e.message, true); location.reload(); }
   });
   append(host,
-    pageHead('Profile', 'Built from your resume. It’s the source for every tailored version.', h('button', { class: 'btn primary', onclick: () => go('#/profile/resume') }, 'Edit master resume')),
+    pageHead('Profile'),
+    nextStep({ title: 'Is everything correct?', sub: 'Every tailored resume starts from this one.', actions: [h('button', { class: 'btn primary', onclick: () => go('#/profile/resume') }, 'Edit resume')] }),
     profile.warnings.length > 0 && h('div', { class: 'notice' }, profile.warnings.join(' ')),
     profileSummary(profile.derived),
     h('div', { class: 'card' }, h('h2', null, 'Skills you’ve confirmed'), chips, h('div', { style: 'margin-top:12px' }, h('button', { class: 'btn sm', onclick: save }, 'Save changes'))),
-    h('details', { class: 'card' }, h('summary', { class: 'row between' }, h('strong', null, 'Optional details'), h('span', { class: 'muted small' }, 'Only if you want them used in your prep')),
-      h('p', { class: 'muted small' }, 'Interview prep works without these. If you add them, answers about notice period and pay use your real numbers.'),
+    h('details', { class: 'card' }, h('summary', { class: 'row between' }, h('strong', null, 'Optional details'), h('span', { class: 'muted small' }, 'Used in interview prep')),
       h('div', { class: 'grid3' }, field('noticePeriod', 'Notice period', 'e.g. 30 days'), field('currentCtc', 'Current CTC', 'e.g. 12 LPA'), field('expectedCtc', 'Expected CTC', 'e.g. 16 LPA'),
         field('location', 'Location', profile.derived.location || ''), field('relocation', 'Open to relocate?', ''), field('yearsExperience', 'Years of experience', profile.derived.yearsExperience ? `Detected ${profile.derived.yearsExperience}` : '', 'number')),
       h('div', { style: 'margin-top:12px' }, h('button', { class: 'btn primary sm', onclick: save }, 'Save'))),
-    h('div', { class: 'card' }, h('h2', null, 'Replace your resume'), h('p', { class: 'muted small' }, 'Uploading a new file replaces the master resume. Your tailored versions stay.'), reupload));
+    h('div', { class: 'card' }, h('h2', null, 'Replace your resume'), h('p', { class: 'muted small' }, 'Your tailored versions stay.'), reupload));
   return host;
 }
 
@@ -116,5 +116,5 @@ export async function masterEditorView(go) {
   if (!profile) { go('#/welcome'); return h('div'); }
   const me = await api('/api/me');
   const ed = resumeEditor({ resume: profile.resume, aiEnabled: me.aiEnabled, title: 'Master resume', onSave: async (resume) => { await api('/api/profile', { method: 'PUT', body: { resume } }); } });
-  return h('div', null, pageHead('Edit master resume', 'Changes apply to resumes tailored from now on.'), ed.el);
+  return h('div', null, pageHead('Edit resume', 'Applies to new tailored resumes.'), ed.el);
 }

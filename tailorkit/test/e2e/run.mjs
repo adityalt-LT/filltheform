@@ -63,12 +63,12 @@ try {
     await dash.waitForSelector('.profile-card');
     const card = await dash.locator('.profile-card').innerText();
     for (const want of ['RAHUL SHARMA', 'Software Engineer', 'Bengaluru', 'rahul.sharma@example.com', '+91 98765 43210', 'Python', 'Django']) assert.ok(card.includes(want), `profile shows ${want}`);
-    await dash.click('summary:has-text("Check how we rebuilt")');
+    await dash.click('summary:has-text("See how we read it")');
     await dash.waitForTimeout(700);
     const headings = await dash.frameLocator('.compare iframe').locator('h2').allInnerTexts();
     assert.deepEqual(headings, ['SUMMARY', 'EXPERIENCE', 'PROJECTS', 'EDUCATION', 'SKILLS', 'CERTIFICATIONS']);
     await shot(dash, '03-profile-review', true);
-    await dash.click('text=Looks good, continue');
+    await dash.click('text=Looks good');
     await dash.waitForSelector('.empty');
     await shot(dash, '04-empty');
   });
@@ -147,14 +147,14 @@ try {
     assert.ok(gaps.includes('Terraform') && gaps.includes('Kafka'), `nice-to-haves after "Good to have" should be detected; gaps were ${gaps}`);
     await shot(dash, '09-job-overview', true);
     await assertClean(dash, 'job overview');
-    const before = parseInt(await dash.locator('.fit .num').innerText(), 10);
+    const before = parseInt(await dash.locator('.ringbox .n').innerText(), 10);
     await dash.click('.gap:has(.chip:text-is("Kubernetes")) >> text=I have this'); await dash.waitForTimeout(500);
-    assert.ok(parseInt(await dash.locator('.fit .num').innerText(), 10) > before);
+    assert.ok(parseInt(await dash.locator('.ringbox .n').innerText(), 10) > before);
   });
 
   await step('re-tailor, edit: remove bullet updates preview, undo restores, PDF downloads', async () => {
-    await dash.click('text=Re-tailor'); await dash.waitForTimeout(800);
-    await dash.click('text=Edit & preview'); await dash.waitForSelector('.editor iframe'); await dash.waitForTimeout(900);
+    await dash.click('button:has-text("Redo")'); await dash.waitForTimeout(800);
+    await dash.click('a.btn:has-text("Edit")'); await dash.waitForSelector('.editor iframe'); await dash.waitForTimeout(900);
     await shot(dash, '10-editor', true);
     const frame = dash.frameLocator('.editor iframe');
     const skills = await frame.locator('.tx').allInnerTexts();
@@ -173,7 +173,7 @@ try {
     const titles = await dash.locator('.jcard .t').allInnerTexts();
     for (const t of ['Senior Backend Engineer', 'Product Analyst', 'Product Management Intern', 'Product Manager II']) assert.ok(titles.includes(t), `${t} in ${titles}`);
     await shot(dash, '05-board');
-    await dash.click('.seg >> text=Table'); await dash.waitForSelector('table.t'); await shot(dash, '05b-table'); await dash.click('.seg >> text=Board'); await dash.waitForSelector('.board');
+    await dash.click('.seg >> text=List'); await dash.waitForSelector('table.t'); await shot(dash, '05b-table'); await dash.click('.seg >> text=Board'); await dash.waitForSelector('.board');
     await assertClean(dash, 'tracking');
     const cos = await dash.locator('.jcard:has-text("Product Manager II") .c').allInnerTexts();
     assert.ok(cos.length >= 2 && cos.every((c) => c === 'Kuku'), `company shown on the cards was ${JSON.stringify(cos)}`);

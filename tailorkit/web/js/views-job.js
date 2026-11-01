@@ -2,7 +2,8 @@ import { h, append, clear, toast, spinner, fmtDate, copyText } from './dom.js';
 import { api, download, streamPost } from './api.js';
 import { icon } from './icons.js';
 import { renderMarkdown } from './markdown.js';
-import { STATUS_LABEL, scorePill, bandOf } from './views-tracking.js';
+import { STATUS_LABEL, bandOf } from './views-tracking.js';
+import { nextStep, path, ring } from './ui.js';
 
 
 const aiBadge = () => h('span', { class: 'ai-badge' }, icon('sparkle'), 'AI');
@@ -31,36 +32,29 @@ export async function jobView(id, me, go) {
     const m = job.match || {};
     const el = h('div', { class: 'stack' });
     const band = bandOf(m);
-    const tape = h('div', { class: 'tape', 'aria-hidden': 'true' }, h('div', { class: 'ticks' }), h('div', { class: 'nums' }, [0, 25, 50, 75, 100].map((n) => h('span', { style: `left:${n}%` }, n))), h('i', { class: 'pin', style: `--pct:${m.score ?? 0}` }));
     el.append(h('div', { class: 'card' },
-      h('div', { class: `fit ${band}`, role: 'img', 'aria-label': `Match score ${m.score ?? 'unknown'} out of 100` },
-        h('div', { class: 'num' }, m.score == null ? '–' : m.score, m.score != null && h('sup', null, '%')),
-        h('div', { class: 'words' }, h('div', { class: 'label' }, 'Fit against this job'),
-          h('h2', null, { strong: 'A good fit', partial: 'Needs alterations', weak: 'Not cut for this one', unknown: 'No clear requirements found' }[band]),
-          h('p', null, m.note), m.yearsExperience != null && h('p', { style: 'margin-top:2px' }, `Experience counted: ${m.yearsExperience} yrs`)),
-        m.score != null && tape),
-      (m.breakdown?.length > 0) && h('div', { class: 'stack', style: 'margin-top:16px' }, m.breakdown.map((b) => h('div', null,
-        h('div', { class: 'row between small' }, h('strong', null, b.label), h('span', { class: 'muted' }, b.detail)),
-        h('div', { class: 'bar', role: 'progressbar', 'aria-valuenow': b.points, 'aria-valuemax': b.max }, h('i', { style: `width:${b.max ? Math.round((b.points / b.max) * 100) : 0}%` })))))));
+      h('div', { class: 'fit' }, m.score != null && ring(m.score),
+        h('div', { class: 'words' }, h('h2', null, { strong: 'Strong match', partial: 'Partial match', weak: 'Weak match', unknown: 'No requirements found' }[band]),
+          h('p', null, m.score == null ? 'Paste the full description to score it.' : `${(m.matchedMust || []).length} of ${(m.matchedMust || []).length + (m.missingMust || []).length} required skills covered`))),
+      (m.breakdown?.length > 0) && h('details', { style: 'margin-top:22px' }, h('summary', { class: 'small muted' }, 'How the score is built'),
+        h('div', { class: 'stack', style: 'margin-top:14px' }, m.breakdown.map((b) => h('div', null,
+          h('div', { class: 'row between small' }, h('strong', null, b.label), h('span', { class: 'muted' }, b.detail)),
+          h('div', { class: 'bar', role: 'progressbar', 'aria-valuenow': b.points, 'aria-valuemax': b.max }, h('i', { style: `width:${b.max ? Math.round((b.points / b.max) * 100) : 0}%` }))))))));
 
     const gapRow = (skill, kind) => h('div', { class: 'gap' },
-      h('span', { class: `chip ${kind === 'must' ? 'bad' : 'warn'}` }, skill),
-      h('span', { class: 'grow small muted' }, kind === 'must' ? 'Required, not on your resume' : 'Nice to have, not on your resume'),
-      h('button', { class: 'btn sm', onclick: async () => { try { const r = await api(`/api/jobs/${id}/gaps`, { method: 'POST', body: { skill, has: true } }); job = { ...job, ...r.job }; toast(`${skill} added to your profile`); draw(); } catch (e) { toast(e.message, true); } } }, 'I have this'),
-      h('button', { class: 'btn sm ghost', onclick: () => toast(`Noted. ${skill} won't be added to your resume.`) }, 'Not yet'));
+      h('span', { class: `chip ${kind === 'must' ? 'warn' : 'info'}` }, skill), h('span', { class: 'grow small muted' }, kind === 'must' ? 'Required' : 'Nice to have'),
+      h('button', { class: 'btn sm', onclick: async () => { try { const r = await api(`/api/jobs/${id}/gaps`, { method: 'POST', body: { skill, has: true } }); job = { ...job, ...r.job }; toast(`${skill} added`); draw(); } catch (e) { toast(e.message, true); } } }, 'I have this'));
     const missing = [...(m.missingMust || []).map((s) => gapRow(s, 'must')), ...(m.missingNice || []).map((s) => gapRow(s, 'nice'))];
-    el.append(h('div', { class: 'card' }, h('h2', null, 'What’s missing from your resume'),
-      missing.length ? [h('p', { class: 'muted small' }, 'These are the likely reasons a screener may skip your resume for this job. If you do have one, confirm it and we’ll add it. We never add a skill you haven’t confirmed.'), ...missing]
-        : h('p', { class: 'muted' }, m.score == null ? 'Nothing to compare yet.' : 'Your resume covers every requirement we found.'),
-      (m.matchedMust?.length > 0) && h('div', { style: 'margin-top:12px' }, h('div', { class: 'small muted', style: 'margin-bottom:6px' }, 'Covered'), h('div', { class: 'reqs' }, [...m.matchedMust, ...(m.matchedNice || [])].map((s) => h('span', { class: 'chip good' }, s))))));
+    el.append(h('div', { class: 'card', id: 'gaps' }, h('h2', null, missing.length ? 'Missing skills' : 'Nothing missing'),
+      missing.length ? [h('p', { class: 'muted small' }, 'Tap “I have this” only if it’s true. We never add a skill you haven’t confirmed.'), ...missing]
+        : h('p', { class: 'muted' }, m.score == null ? 'Nothing to compare yet.' : 'Your resume covers every requirement.'),
+      (m.matchedMust?.length > 0) && h('div', { style: 'margin-top:20px' }, h('div', { class: 'label', style: 'margin-bottom:8px' }, 'You have'), h('div', { class: 'reqs' }, [...m.matchedMust, ...(m.matchedNice || [])].map((s) => h('span', { class: 'chip good' }, s))))));
 
     const r = latest();
-    el.append(h('div', { class: 'card' }, h('h2', null, 'Tailored resume'),
-      r ? h('div', { class: 'stack' },
-        h('div', { class: 'row' }, h('button', { class: 'btn primary', onclick: () => dl(r) }, 'Download PDF'), h('a', { class: 'btn', href: `#/resume/${r.id}` }, 'Edit & preview'), h('button', { class: 'btn', onclick: tailor }, icon('refresh'), 'Re-tailor')),
-        h('p', { class: 'muted small' }, `Latest version created ${fmtDate(r.created_at)}. Re-tailor after confirming skills; old versions are kept.`),
-        job.resumes.length > 1 && h('div', { class: 'small' }, 'Earlier versions: ', job.resumes.slice(1).map((x) => h('a', { href: `#/resume/${x.id}`, style: 'margin-right:8px' }, fmtDate(x.created_at) || `#${x.id}`))))
-        : h('div', { class: 'stack' }, h('p', { class: 'muted' }, 'No tailored resume yet for this job.'), h('div', null, h('button', { class: 'btn primary', onclick: tailor }, 'Create tailored resume')))));
+    el.append(h('div', { class: 'card' }, h('h2', null, 'Your resume for this job'),
+      r ? h('div', { class: 'stack' }, h('div', { class: 'row' }, h('button', { class: 'btn primary', onclick: () => dl(r) }, 'Download PDF'), h('a', { class: 'btn', href: `#/resume/${r.id}` }, 'Edit'), h('button', { class: 'btn ghost', onclick: tailor }, icon('refresh', 15), 'Redo')),
+        job.resumes.length > 1 && h('div', { class: 'small muted' }, 'Earlier: ', job.resumes.slice(1).map((x) => h('a', { href: `#/resume/${x.id}`, style: 'margin-right:10px' }, fmtDate(x.created_at) || `#${x.id}`))))
+        : h('div', { class: 'stack' }, h('button', { class: 'btn primary', onclick: tailor }, 'Create resume'))));
     return el;
   }
 
@@ -143,22 +137,22 @@ export async function jobView(id, me, go) {
       state.stale && h('div', { class: 'notice', style: 'margin-top:12px' }, 'Your resume or settings changed since this was prepared. Refresh to update it.'),
       p.aiFailed && h('div', { class: 'notice', style: 'margin-top:12px' }, `AI couldn’t be used for this one (${p.aiFailed}). Showing the basic version.`),
       !me.aiEnabled && h('div', { class: 'card soft', style: 'margin-top:12px' }, h('div', { class: 'row between' }, h('div', null, h('strong', null, 'Turn on AI for the full picture'), h('div', { class: 'muted small' }, 'Employee review themes, reported interview questions, news and answers written around this company.')), h('a', { class: 'btn primary sm', href: '#/settings' }, 'Set up AI'))),
-      sec('The role in one line', 'target'), h('div', { class: 'oneliner' }, b.oneLiner || job.title),
+      sec('The role', 'target'), h('div', { class: 'oneliner' }, b.oneLiner || job.title),
       h('div', { class: 'cols2', style: 'margin-top:14px' },
         h('div', { class: 'card' }, h('h3', null, 'What they’re looking for'), list(b.whatTheyWant) || h('p', { class: 'muted small' }, 'No clear requirements detected.')),
         h('div', { class: 'card' }, h('h3', null, 'Where you’re strong'), list(b.yourEdge) || h('p', { class: 'muted small' }, 'Capture the full job text for a sharper read.'))),
-      b.stretchAreas?.length > 0 && h('div', { class: 'card', style: 'margin-top:14px' }, h('h3', null, 'Gaps, and how to frame them honestly'), h('ul', { class: 'tidy' }, b.stretchAreas.map((x) => h('li', null, h('strong', null, x.skill), ': ', x.howToFrame)))),
+      b.stretchAreas?.length > 0 && h('div', { class: 'card', style: 'margin-top:14px' }, h('h3', null, 'Gaps and how to frame them'), h('ul', { class: 'tidy' }, b.stretchAreas.map((x) => h('li', null, h('strong', null, x.skill), ': ', x.howToFrame)))),
       b.resumeAdvice?.length > 0 && h('div', { class: 'card', style: 'margin-top:14px' }, h('h3', null, 'Resume advice'), list(b.resumeAdvice)),
       companyCard(state.research),
-      sec('Likely questions, with answers drafted from your resume', 'chat'),
+      sec('Likely questions', 'chat'),
       h('div', null, p.questions.map((q, i) => h('details', { class: 'q', open: i === 0 },
         h('summary', null, h('span', { class: 'chip' }, q.category), h('span', { class: 'qt' }, q.question)),
         h('div', { class: 'body' },
           q.whyTheyAsk && h('div', { class: 'why' }, h('strong', null, 'Why they ask: '), q.whyTheyAsk),
           h('div', null, h('div', { class: 'row between', style: 'margin-bottom:6px' }, h('strong', { class: 'small' }, 'Suggested answer'), h('button', { class: 'btn sm ghost', onclick: () => copyText(q.answer) }, icon('copy', 14), 'Copy')), h('div', { class: 'ans' }, q.answer)),
           q.evidence?.length > 0 && h('div', null, h('div', { class: 'small muted' }, 'From your resume'), q.evidence.map((e) => h('div', { class: 'ev' }, e))))))),
-      p.askThem?.length > 0 && h('div', null, sec('Questions to ask them', 'list'), h('div', { class: 'card' }, list(p.askThem))),
-      (p.negotiation?.notice || p.negotiation?.ctc) && h('div', null, sec('Notice period and pay', 'user'), h('div', { class: 'card cols2' },
+      p.askThem?.length > 0 && h('div', null, sec('Questions to ask', 'list'), h('div', { class: 'card' }, list(p.askThem))),
+      (p.negotiation?.notice || p.negotiation?.ctc) && h('div', null, sec('Notice and pay', 'user'), h('div', { class: 'card cols2' },
         h('div', null, h('h3', null, 'Notice period'), h('p', { style: 'margin:0' }, p.negotiation.notice)), h('div', null, h('h3', null, 'CTC'), h('p', { style: 'margin:0' }, p.negotiation.ctc)))),
       h('p', { class: 'muted small', style: 'margin-top:18px' }, 'These are likely questions based on your resume, this job description and public information. They are predictions, not what the recruiter will definitely ask.'));
     return el;
@@ -227,25 +221,35 @@ export async function jobView(id, me, go) {
 
   function jdTab() { return h('div', { class: 'card' }, h('h2', null, 'Captured job text'), h('p', { class: 'muted small' }, 'Exactly what the extension read from the page.'), h('pre', { class: 'jd' }, job.jdText || '')); }
 
+  // What should this person do next on this job?
+  function next() {
+    const m = job.match || {}; const r = latest(); const miss = (m.missingMust || []).length;
+    const apply = job.url ? h('a', { class: 'btn', href: job.url, target: '_blank', rel: 'noopener noreferrer' }, 'Open job posting ↗') : null;
+    if (!r) return nextStep({ title: 'Create your resume for this job', sub: 'Same layout, tailored to the job', actions: [h('button', { class: 'btn primary', onclick: tailor }, 'Create resume')] });
+    if (['screening', 'interview'].includes(job.status)) return nextStep({ title: `Prepare for your ${STATUS_LABEL[job.status].toLowerCase()}`, sub: 'Likely questions with answers from your resume', actions: [h('button', { class: 'btn primary', onclick: () => { tab = 'prep'; draw(); } }, 'Open prep')] });
+    if (job.status === 'saved' && miss > 0) return nextStep({ title: `${miss} required skill${miss === 1 ? '' : 's'} missing`, sub: 'Confirm the ones you really have', actions: [h('a', { class: 'btn primary', href: '#', onclick: (e) => { e.preventDefault(); document.getElementById('gaps')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }, 'Review skills')] });
+    if (job.status === 'saved') return nextStep({ title: 'Download your resume and apply', sub: 'You press apply on the company’s site', actions: [h('button', { class: 'btn primary', onclick: () => dl(r) }, 'Download PDF'), apply] });
+    return nextStep({ title: 'Keep your prep sharp', sub: 'Questions and answers for this role', actions: [h('button', { class: 'btn primary', onclick: () => { tab = 'prep'; draw(); } }, 'Open prep')] });
+  }
+  const stageIndex = () => (!latest() ? 1 : ['screening', 'interview', 'offer'].includes(job.status) ? 2 : job.status === 'applied' ? 3 : (job.match?.missingMust || []).length ? 0 : 1);
+
   function draw() {
     clear(host);
-    const status = h('select', { 'aria-label': 'Stage', style: 'width:auto', onchange: async (e) => { try { const r = await api(`/api/jobs/${id}`, { method: 'PATCH', body: { status: e.target.value } }); job = { ...job, ...r.job }; toast(`Moved to ${STATUS_LABEL[e.target.value]}`); } catch (x) { toast(x.message, true); } } },
+    const status = h('select', { 'aria-label': 'Stage', onchange: async (e) => { try { const r = await api(`/api/jobs/${id}`, { method: 'PATCH', body: { status: e.target.value } }); job = { ...job, ...r.job }; toast(`Moved to ${STATUS_LABEL[e.target.value]}`); draw(); } catch (x) { toast(x.message, true); } } },
       Object.entries(STATUS_LABEL).map(([v, l]) => h('option', { value: v, selected: v === job.status }, l)));
-    const notes = h('textarea', { rows: 2, placeholder: 'Notes: recruiter name, referral, anything…' }); notes.value = job.notes || '';
+    const notes = h('textarea', { rows: 3, placeholder: 'Notes' }); notes.value = job.notes || '';
     append(host,
-      h('div', { class: 'row between', style: 'margin-top:8px;align-items:flex-start' },
-        h('div', null, h('h1', null, job.title || 'Untitled role'), h('div', { class: 'row tight', style: 'margin-top:6px' }, job.company ? h('span', { class: 'chip primary' }, job.company) : h('span', { class: 'chip warn' }, 'Company not detected'), job.location && h('span', { class: 'chip' }, job.location), job.source && h('span', { class: 'chip' }, job.source)),
-          h('div', { class: 'row', style: 'gap:12px' }, job.url && h('a', { class: 'small', href: job.url, target: '_blank', rel: 'noopener noreferrer' }, 'Open original posting ↗'),
-            h('button', { class: 'btn sm ghost', onclick: () => { editing = !editing; draw(); } }, editing ? 'Cancel' : 'Edit details'))),
-        h('div', { class: 'row' }, scorePill(job.match), status,
-          h('button', { class: 'btn sm ghost danger', onclick: async () => { if (!confirm('Delete this job and its tailored resumes?')) return; await api(`/api/jobs/${id}`, { method: 'DELETE' }); toast('Deleted'); go('#/tracking'); } }, 'Delete'))),
+      h('div', { class: 'row between', style: 'margin-bottom:26px;align-items:flex-end' },
+        h('div', null, h('div', { class: 'row tight', style: 'margin-bottom:8px' }, job.company ? h('span', { class: 'chip primary' }, job.company) : h('span', { class: 'chip warn' }, 'Company not detected'), job.location && h('span', { class: 'muted small' }, job.location)),
+          h('h1', null, job.title || 'Untitled role'),
+          h('div', { class: 'row', style: 'gap:6px;margin-top:6px' }, job.url && h('a', { class: 'small', href: job.url, target: '_blank', rel: 'noopener noreferrer' }, 'Original posting ↗'), h('button', { class: 'btn sm ghost', onclick: () => { editing = !editing; draw(); } }, editing ? 'Cancel' : 'Edit details'))),
+        h('div', { class: 'row' }, status, h('button', { class: 'btn ghost danger sm', onclick: async () => { await api(`/api/jobs/${id}`, { method: 'DELETE' }); toast('Deleted'); go('#/tracking'); } }, 'Delete'))),
       editing && editForm(),
-      h('div', { class: 'tabs', role: 'tablist' }, [['overview', 'Overview', null], ['prep', 'Interview prep', 'sparkle'], ['chat', 'Ask AI', 'chat'], ['jd', 'Job text', null]].map(([k, l, ic]) =>
-        h('button', { class: tab === k ? 'on' : '', role: 'tab', onclick: () => { tab = k; draw(); } }, ic && icon(ic, 16), l))));
-    if (tab === 'overview') host.append(h('div', { class: 'layout2' }, overview(), h('div', { class: 'stack' },
-      h('div', { class: 'card' }, h('h3', null, 'Details'), h('dl', { class: 'kv', style: 'grid-template-columns:90px 1fr;margin-top:6px' },
-        h('dt', null, 'Stage'), h('dd', null, STATUS_LABEL[job.status]), h('dt', null, 'Company'), h('dd', null, job.company || '–'), h('dt', null, 'Location'), h('dd', null, job.location || '–'), h('dt', null, 'Source'), h('dd', null, job.source || '–'), h('dt', null, 'Captured'), h('dd', null, fmtDate(job.createdAt) || '–'))),
-      h('div', { class: 'card' }, h('h3', null, 'Notes'), notes, h('div', { style: 'margin-top:10px' }, h('button', { class: 'btn sm', onclick: async () => { try { await api(`/api/jobs/${id}`, { method: 'PATCH', body: { notes: notes.value } }); toast('Notes saved'); } catch (e) { toast(e.message, true); } } }, 'Save notes'))))));
+      path(['Review fit', 'Resume', 'Prepare', 'Apply'], stageIndex()),
+      next(),
+      h('div', { class: 'tabs', role: 'tablist' }, [['overview', 'Overview', null], ['prep', 'Interview prep', null], ['chat', 'Ask AI', null], ['jd', 'Job text', null]].map(([k, l]) =>
+        h('button', { class: tab === k ? 'on' : '', role: 'tab', onclick: () => { tab = k; draw(); } }, l))));
+    if (tab === 'overview') host.append(h('div', { class: 'layout2' }, overview(), h('div', { class: 'card' }, h('h3', null, 'Notes'), notes, h('div', { style: 'margin-top:12px' }, h('button', { class: 'btn sm', onclick: async () => { try { await api(`/api/jobs/${id}`, { method: 'PATCH', body: { notes: notes.value } }); toast('Saved'); } catch (e) { toast(e.message, true); } } }, 'Save')))));
     else if (tab === 'prep') host.append(prepView());
     else if (tab === 'chat') host.append(chatView());
     else host.append(jdTab());
