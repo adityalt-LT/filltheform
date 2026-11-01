@@ -34,7 +34,7 @@ await step('opens signed in on the board with six sample jobs', async () => {
   await shot('board');
 });
 await step('logo animates on a fresh load, stays still when moving between pages, and plays again on refresh', async () => {
-  const anims = () => page.evaluate(() => document.querySelector('.nav .logo svg').getAnimations({ subtree: true }).length);
+  const anims = () => page.evaluate(() => document.querySelector('.nav .logo svg').getAnimations({ subtree: true }).filter((a) => a.playState === 'running').length);
   await page.reload(); await page.waitForSelector('.nav .logo svg');
   assert.ok(await anims() > 0, 'plays on load');
   await page.waitForTimeout(3600);
@@ -43,6 +43,14 @@ await step('logo animates on a fresh load, stays still when moving between pages
   await page.goto(`${base}#d-tracking`); await page.reload(); await page.waitForSelector('.nav .logo svg');
   assert.ok(await anims() > 0, 'plays again after a refresh');
   await page.waitForSelector('.jcard');
+});
+await step('clicking the logo plays the animation again, on Jobs and from another page', async () => {
+  const anims = () => page.evaluate(() => document.querySelector('.nav .logo svg').getAnimations({ subtree: true }).filter((a) => a.playState === 'running').length);
+  await page.waitForTimeout(3600); assert.equal(await anims(), 0);
+  await page.click('.nav .logo'); assert.ok(await anims() > 0, 'replays when already on Jobs');
+  await page.waitForTimeout(3600); await page.click('.navtabs >> text=Skills'); await page.waitForSelector('.navitem.active:has-text("Skills")'); await page.waitForTimeout(3600);
+  assert.equal(await anims(), 0);
+  await page.click('.nav .logo'); await page.waitForSelector('.jcard'); assert.ok(await anims() > 0, 'replays and returns to Jobs from another page');
 });
 await step('job page shows a real match score and gaps', async () => {
   await page.locator('.jcard', { hasText: 'Acme Payments' }).click();

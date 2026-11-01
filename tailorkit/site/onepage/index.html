@@ -398,6 +398,9 @@ footer { padding: 36px 0 calc(36px + env(safe-area-inset-bottom, 0px)); box-shad
   /* the closing line lights up when the dark section is reached */
   const mine = $('.mine'); new IntersectionObserver((es) => es.forEach((e) => mine.classList.toggle('lit', e.isIntersecting && e.intersectionRatio > .9)), { threshold: [0, .9, 1] }).observe(mine);
 
+  /* clicking the logo (header or footer) scrolls to the top and plays the logo animation again */
+  $$('.logo').forEach((a) => a.addEventListener('click', () => { const svg = $('nav.top .logo svg'); if (svg) svg.replaceWith(svg.cloneNode(true)); }));
+
   /* the store listing is not live yet: say so instead of linking nowhere */
   const toast = $('#toast'); let tt;
   $$('[data-store]').forEach((a) => a.addEventListener('click', (e) => { e.preventDefault(); toast.textContent = 'Preview: the Chrome Web Store listing is not live yet.'; toast.classList.add('show'); clearTimeout(tt); tt = setTimeout(() => toast.classList.remove('show'), 3200); }));

@@ -12,3 +12,12 @@ export function brandLogo({ height = 30, animate = !played, label = 'Rolemate' }
   const doc = new DOMParser().parseFromString(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${VIEW}" width="${w}" height="${height}" role="img" aria-label="${label}">${animate ? `<style>${CSS}</style>` : ''}${BODY}</svg>`, 'image/svg+xml');
   return document.importNode(doc.documentElement, true);
 }
+
+// Clicking the logo plays it again. Call armLogo() before a navigation that rebuilds the top bar, so the new logo animates;
+// call replayLogo(node) to restart the one already on screen.
+export const armLogo = () => { played = false; };
+export function replayLogo(node) {
+  const fresh = brandLogo({ height: Number(node.getAttribute('height')) || 30, animate: true, label: node.getAttribute('aria-label') || 'Rolemate' });
+  node.replaceWith(fresh);
+  return fresh;
+}

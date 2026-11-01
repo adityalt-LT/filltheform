@@ -19,9 +19,14 @@ const scrollTo = async (sel) => { await page.evaluate((s) => document.querySelec
 
 await page.goto('file://' + file); await page.waitForTimeout(1200);
 await step('nav logo plays on load and again after a refresh', async () => {
-  const anims = () => page.evaluate(() => document.querySelector('nav.top .logo svg').getAnimations({ subtree: true }).length);
+  const anims = () => page.evaluate(() => document.querySelector('nav.top .logo svg').getAnimations({ subtree: true }).filter((a) => a.playState === 'running').length);
   assert.ok(await anims() > 0, 'plays on load');
   await page.reload(); await page.waitForTimeout(600); assert.ok(await anims() > 0, 'plays again after refresh');
+});
+await step('clicking the logo plays it again', async () => {
+  const anims = () => page.evaluate(() => document.querySelector('nav.top .logo svg').getAnimations({ subtree: true }).filter((a) => a.playState === 'running').length);
+  await page.waitForTimeout(3600); assert.equal(await anims(), 0, 'finished');
+  await page.click('nav.top .logo'); await page.waitForTimeout(300); assert.ok(await anims() > 0, 'plays again after a click');
 });
 await step('hero headline reveals word by word', async () => { assert.equal(await page.locator('h1 .w').count(), 4); await shot('hero'); });
 await step('hero demo: cursor clicks, post flies, ring counts to 82', async () => {
